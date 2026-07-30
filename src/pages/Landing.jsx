@@ -9,7 +9,7 @@ export default function Landing() {
 
       <main className="flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-3xl text-center">
-          <p className="font-mono text-xs tracking-[0.2em] text-brand-500 mb-3">LIVE DEVICE MONITORING</p>
+          <p className="font-mono text-xs tracking-[0.2em] text-brand-500 mb-3">LIVE WATER DEVICE MONITORING</p>
           <h1 className="text-3xl sm:text-4xl font-semibold text-mist-200 mb-3">
             One signal. Three channels. Zero silence.
           </h1>

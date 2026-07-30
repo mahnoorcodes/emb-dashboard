@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './lib/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Landing from './pages/Landing'
@@ -15,7 +15,7 @@ import ResetPassword from './pages/ResetPassword'
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter basename="/emb-dashboard">
+      <HashRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/customer/signup" element={<CustomerSignup />} />
@@ -28,7 +28,7 @@ export default function App() {
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </AuthProvider>
   )
 }

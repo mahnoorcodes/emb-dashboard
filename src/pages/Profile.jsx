@@ -18,7 +18,7 @@
         setSending(true)
         setError(null)
         const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/emb-dashboard/reset-password`,
+        redirectTo: `${window.location.origin}/emb-dashboard/#/reset-password`,
         })
         setSending(false)
         if (error) setError(error.message)
