@@ -7,6 +7,7 @@ import CustomerLogin from './pages/CustomerLogin'
 import CompanySignup from './pages/CompanySignup'
 import CompanyLogin from './pages/CompanyLogin'
 import Dashboard from './pages/Dashboard'
+import DashboardAdmin from './pages/DashboardAdmin'
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/company/signup" element={<CompanySignup />} />
           <Route path="/company/login" element={<CompanyLogin />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/dashboard/admin" element={<ProtectedRoute><DashboardAdmin /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
