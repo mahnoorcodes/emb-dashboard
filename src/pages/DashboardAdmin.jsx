@@ -136,6 +136,12 @@
             <Link to="/dashboard" className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
                 Standard view
             </Link>
+            <Link to="/profile" className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
+                Profile
+            </Link>
+            <Link to="/settings" className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
+                Settings
+            </Link>
             <button onClick={signOut} className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
                 Log out
             </button>
