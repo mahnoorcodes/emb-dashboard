@@ -1,11 +1,10 @@
     import { useState } from 'react'
-    import { Link, useNavigate } from 'react-router-dom'
     import { useAuth } from '../lib/AuthContext'
     import { supabase } from '../lib/supabaseClient'
+    import Navbar from '../components/Navbar'
 
     export default function Profile() {
-    const { user, portal, accountType, role, isPlatformAdmin, signOut } = useAuth()
-    const navigate = useNavigate()
+    const { user, portal, accountType, role, isPlatformAdmin } = useAuth()
     const [sending, setSending] = useState(false)
     const [sent, setSent] = useState(false)
     const [error, setError] = useState(null)
@@ -27,20 +26,7 @@
 
     return (
         <div className="min-h-screen bg-ink-950">
-        <header className="px-8 py-5 flex items-center justify-between border-b border-ink-700">
-            <span className="font-mono text-sm tracking-widest text-mist-400">EMB · PROFILE</span>
-            <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
-                Back to dashboard
-            </Link>
-            <Link to="/settings" className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
-                Settings
-            </Link>
-            <button onClick={signOut} className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
-                Log out
-            </button>
-            </div>
-        </header>
+        <Navbar title="PROFILE" />
 
         <main className="p-8 max-w-2xl">
             <div className="bg-ink-800 border border-ink-700 rounded-lg overflow-hidden mb-6">

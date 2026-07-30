@@ -1,7 +1,8 @@
     import { useEffect, useState } from 'react'
-    import { Link, Navigate } from 'react-router-dom'
+    import { Navigate } from 'react-router-dom'
     import { useAuth } from '../lib/AuthContext'
     import { supabase } from '../lib/supabaseClient'
+    import Navbar from '../components/Navbar'
 
     const STALE_MINUTES = 30
     const REFRESH_MS = 30000
@@ -32,7 +33,7 @@
     }
 
     export default function DashboardAdmin() {
-    const { user, isPlatformAdmin, loading: authLoading, signOut } = useAuth()
+    const { user, isPlatformAdmin, loading: authLoading } = useAuth()
     const [devices, setDevices] = useState([])
     const [sites, setSites] = useState([])
     const [tickets, setTickets] = useState([])
@@ -125,28 +126,7 @@
 
     return (
         <div className="min-h-screen bg-ink-950">
-        <header className="px-8 py-5 flex items-center justify-between border-b border-ink-700">
-            <div className="flex items-center gap-3">
-            <span className="font-mono text-sm tracking-widest text-mist-400">EMB · ADMIN</span>
-            <span className="text-xs font-mono bg-brand-500/10 text-brand-500 border border-brand-500 rounded px-2 py-0.5">
-                ADMIN VIEW
-            </span>
-            </div>
-            <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
-                Standard view
-            </Link>
-            <Link to="/profile" className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
-                Profile
-            </Link>
-            <Link to="/settings" className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
-                Settings
-            </Link>
-            <button onClick={signOut} className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
-                Log out
-            </button>
-            </div>
-        </header>
+        <Navbar title="ADMIN" badge="ADMIN VIEW" />
 
         <main className="p-8 space-y-8">
             <div>

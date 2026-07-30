@@ -1,8 +1,8 @@
     import { useState } from 'react'
-    import { Link } from 'react-router-dom'
     import { useAuth } from '../lib/AuthContext'
     import { supabase } from '../lib/supabaseClient'
     import SegmentedToggle from '../components/SegmentedToggle'
+    import Navbar from '../components/Navbar'
 
     function Toggle({ checked, onChange, label }) {
     return (
@@ -74,12 +74,7 @@
 
     return (
         <div className="min-h-screen bg-ink-950">
-        <header className="px-8 py-5 flex items-center justify-between border-b border-ink-700">
-            <span className="font-mono text-sm tracking-widest text-mist-400">EMB · SETTINGS</span>
-            <Link to="/profile" className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
-            Back to profile
-            </Link>
-        </header>
+        <Navbar title="SETTINGS" />
 
         <main className="p-8 max-w-2xl">
             <form onSubmit={handleSave} className="space-y-6">
