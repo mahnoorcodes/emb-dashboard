@@ -19,9 +19,16 @@ export default function CompanyLogin() {
     setLoading(true)
     setError(null)
     const { data, error } = await supabase.auth.signInWithPassword(form)
+    if (error) { setLoading(false); return setError(error.message) }
+
+    const { data: profile } = await supabase
+      .from('app_users')
+      .select('portal')
+      .eq('id', data.user.id)
+      .single()
+
     setLoading(false)
-    if (error) return setError(error.message)
-    if (data.user?.user_metadata?.portal !== 'company') {
+    if (profile?.portal !== 'company') {
       await supabase.auth.signOut()
       return setError('This login is for company accounts. Use the customer login instead.')
     }
