@@ -23,6 +23,7 @@ jobs:
           node-version: 22.22.2
       - run: npm install -g npm@10.9.7
       - run: npm ci
+      - run: npm run build
         env:
           # Set these as repo secrets: Settings → Secrets and variables → Actions
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
