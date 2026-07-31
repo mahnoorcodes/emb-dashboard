@@ -11,6 +11,7 @@ import DashboardAdmin from './pages/DashboardAdmin'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import ResetPassword from './pages/ResetPassword'
+import Footer from './components/Footer'
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
+        <Footer />
       </HashRouter>
     </AuthProvider>
   )

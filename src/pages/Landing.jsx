@@ -40,10 +40,6 @@ export default function Landing() {
           </div>
         </div>
       </main>
-
-      <footer className="px-8 py-6 text-center text-xs text-mist-400 font-mono">
-        ONE9 3NINE CONSULTING FZE · TECHNOLOGY FROM INCEPTION
-      </footer>
     </div>
   )
 }
