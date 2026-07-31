@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 function Row({ label, children }) {
 return (
 <div className="py-3 border-b border-ink-700 last:border-0">
@@ -34,6 +36,7 @@ return `${Math.round(hrs / 24)}d ago`
 
 export default function DeviceDetailPanel({ device, photos = [], showDeviceId = false, onClose, onEdit, onDelete }) {
 const isOpen = !!device
+const [expandedPhoto, setExpandedPhoto] = useState(null)
 
 return (
 <>
@@ -66,7 +69,13 @@ return (
             {photos.length > 0 ? (
                 <div className="flex gap-2">
                 {photos.map((url, i) => (
-                    <img key={i} src={url} alt={`${device.name} ${i + 1}`} className="w-20 h-20 rounded object-cover" />
+                    <img
+                    key={i}
+                    src={url}
+                    alt={`${device.name} ${i + 1}`}
+                    onClick={() => setExpandedPhoto(url)}
+                    className="w-20 h-20 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                    />
                 ))}
                 </div>
             ) : (
@@ -173,6 +182,26 @@ return (
         </>
     )}
     </div>
+
+    {/* Photo lightbox — sits above the panel itself */}
+    {expandedPhoto && (
+    <div
+        onClick={() => setExpandedPhoto(null)}
+        className="fixed inset-0 bg-black/85 z-[60] flex items-center justify-center p-6 cursor-zoom-out"
+    >
+        <img
+        src={expandedPhoto}
+        alt="Expanded device photo"
+        className="max-w-full max-h-full rounded-lg object-contain"
+        />
+        <button
+        onClick={() => setExpandedPhoto(null)}
+        className="absolute top-6 right-6 text-white text-sm font-mono bg-ink-800/80 hover:bg-ink-700 px-3 py-1.5 rounded-md"
+        >
+        Close ✕
+        </button>
+    </div>
+    )}
 </>
 )
 }
