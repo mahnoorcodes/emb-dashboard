@@ -36,8 +36,20 @@ return (
             className={`text-sm transition-colors ${
             link.highlight ? 'text-brand-500 hover:underline' : 'text-mist-400 hover:text-brand-500'
             }`}
+            aria-label={link.label}
+            title={link.label}
         >
-            {link.label}
+            {link.to === '/profile' ? (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+            ) : link.to === '/settings' ? (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.63l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54A.5.5 0 0 0 14.5 2h-5a.5.5 0 0 0-.5.42l-.36 2.54c-.59.22-1.14.52-1.62.94l-2.39-.96a.5.5 0 0 0-.61.22L2.7 8.48a.5.5 0 0 0 .12.63l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.82 14.9a.5.5 0 0 0-.12.63l1.92 3.32c.16.27.49.37.77.22l2.39-.96c.48.42 1.03.72 1.62.94l.36 2.54c.05.28.28.48.56.48h5c.28 0 .51-.2.56-.48l.36-2.54c.59-.22 1.14-.52 1.62-.94l2.39.96c.28.11.61.05.77-.22l1.92-3.32a.5.5 0 0 0-.12-.63l-2.03-1.58zM12 15.5a3.5 3.5 0 1 1 .001-7.001A3.5 3.5 0 0 1 12 15.5z" />
+            </svg>
+            ) : (
+            link.label
+            )}
         </Link>
         ))}
         <button onClick={signOut} className="text-sm text-mist-400 hover:text-brand-500 transition-colors">
@@ -70,8 +82,26 @@ return (
             className={`px-4 py-3 text-sm border-t border-ink-700 transition-colors ${
             link.highlight ? 'text-brand-500' : 'text-mist-400 hover:text-brand-500'
             }`}
+            aria-label={link.label}
+            title={link.label}
         >
-            {link.label}
+            {link.to === '/profile' ? (
+            <span className="inline-flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+                Profile
+            </span>
+            ) : link.to === '/settings' ? (
+            <span className="inline-flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.63l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54A.5.5 0 0 0 14.5 2h-5a.5.5 0 0 0-.5.42l-.36 2.54c-.59.22-1.14.52-1.62.94l-2.39-.96a.5.5 0 0 0-.61.22L2.7 8.48a.5.5 0 0 0 .12.63l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.82 14.9a.5.5 0 0 0-.12.63l1.92 3.32c.16.27.49.37.77.22l2.39-.96c.48.42 1.03.72 1.62.94l.36 2.54c.05.28.28.48.56.48h5c.28 0 .51-.2.56-.48l.36-2.54c.59-.22 1.14-.52 1.62-.94l2.39.96c.28.11.61.05.77-.22l1.92-3.32a.5.5 0 0 0-.12-.63l-2.03-1.58zM12 15.5a3.5 3.5 0 1 1 .001-7.001A3.5 3.5 0 0 1 12 15.5z" />
+                </svg>
+                Settings
+            </span>
+            ) : (
+            link.label
+            )}
         </Link>
         ))}
         <button
