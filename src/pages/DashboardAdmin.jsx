@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import Navbar from '../components/Navbar'
+import DeviceDetailPanel from '../components/DeviceDetailPanel'
 
 const STALE_MINUTES = 30
 const REFRESH_MS = 30000
@@ -44,6 +45,7 @@ const [loading, setLoading] = useState(true)
 const [error, setError] = useState(null)
 const [search, setSearch] = useState('')
 const [editingId, setEditingId] = useState(null)
+const [selectedDevice, setSelectedDevice] = useState(null)
 
 // Gate: the ONLY thing that grants this page is a database-backed flag
 // (app_users.is_platform_admin) that no signup flow or client code can
@@ -484,7 +486,11 @@ return (
                 {filteredDevices.map((d) => {
                 const status = statusFor(d)
                 return (
-                    <tr key={d.id} className="border-b border-ink-700 last:border-0 hover:bg-ink-700/40 transition-colors">
+                    <tr
+                    key={d.id}
+                    onClick={() => setSelectedDevice(d)}
+                    className="border-b border-ink-700 last:border-0 hover:bg-ink-700/40 transition-colors cursor-pointer"
+                    >
                     <td className="px-4 py-3">
                         {photoUrls[d.id]?.length > 0 ? (
                         <div className="flex gap-1">
@@ -502,13 +508,10 @@ return (
                         <p className="text-xs text-mist-400 font-mono">{d.device_type} · {d.model ?? '—'}</p>
                     </td>
                     <td className="px-4 py-3 text-mist-200">{d.site_name ?? '—'}</td>
-                    <td className="px-4 py-3">
-                    <p className="text-mist-200">{d.company_name || d.owner_full_name || '—'}</p>
-                    <p className="text-xs font-mono text-mist-400">{d.owner_portal === 'company' ? 'COMPANY' : 'CUSTOMER'}</p>
-                    </td>
+                    <td className="px-4 py-3 text-mist-200">{d.company_name ?? '—'}</td>
                     <td className="px-4 py-3">
                         {d.maps_url ? (
-                        <a href={d.maps_url} target="_blank" rel="noopener noreferrer" className="text-brand-500 hover:underline text-xs">
+                        <a href={d.maps_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-brand-500 hover:underline text-xs">
                             Open ↗
                         </a>
                         ) : (
@@ -535,8 +538,8 @@ return (
                     <td className="px-4 py-3 text-mist-400 font-mono text-xs">{formatAgo(d.last_reading_at)}</td>
                     <td className="px-4 py-3">
                         <div className="flex gap-2">
-                        <button onClick={() => handleEditClick(d)} className="text-brand-500 hover:underline text-xs">Edit</button>
-                        <button onClick={() => handleDeleteDevice(d)} className="text-alert-500 hover:underline text-xs">Delete</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleEditClick(d) }} className="text-brand-500 hover:underline text-xs">Edit</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteDevice(d) }} className="text-alert-500 hover:underline text-xs">Delete</button>
                         </div>
                     </td>
                     </tr>
@@ -582,6 +585,15 @@ return (
         )}
     </section>
     </main>
+
+    <DeviceDetailPanel
+    device={selectedDevice}
+    photos={selectedDevice ? photoUrls[selectedDevice.id] ?? [] : []}
+    showDeviceId
+    onEdit={handleEditClick}
+    onDelete={handleDeleteDevice}
+    onClose={() => setSelectedDevice(null)}
+    />
 </div>
 )
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import Navbar from '../components/Navbar'
+import DeviceDetailPanel from '../components/DeviceDetailPanel'
 
 const STALE_MINUTES = 30
 const REFRESH_MS = 30000
@@ -37,6 +38,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
+  const [selectedDevice, setSelectedDevice] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -158,7 +160,11 @@ export default function Dashboard() {
                   {filteredDevices.map((d) => {
                     const status = statusFor(d)
                     return (
-                      <tr key={d.id} className="border-b border-ink-700 last:border-0 hover:bg-ink-700/40 transition-colors">
+                      <tr
+                        key={d.id}
+                        onClick={() => setSelectedDevice(d)}
+                        className="border-b border-ink-700 last:border-0 hover:bg-ink-700/40 transition-colors cursor-pointer"
+                      >
                         <td className="px-4 py-3">
                           {photoUrls[d.id]?.length > 0 ? (
                             <div className="flex gap-1">
@@ -181,7 +187,7 @@ export default function Dashboard() {
                         </td>
                         <td className="px-4 py-3">
                           {d.maps_url ? (
-                            <a href={d.maps_url} target="_blank" rel="noopener noreferrer" className="text-brand-500 hover:underline text-xs">
+                            <a href={d.maps_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-brand-500 hover:underline text-xs">
                               Open ↗
                             </a>
                           ) : (
@@ -216,6 +222,12 @@ export default function Dashboard() {
           )}
         </div>
       </main>
+
+      <DeviceDetailPanel
+        device={selectedDevice}
+        photos={selectedDevice ? photoUrls[selectedDevice.id] ?? [] : []}
+        onClose={() => setSelectedDevice(null)}
+      />
     </div>
   )
 }
