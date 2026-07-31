@@ -135,24 +135,25 @@ export default function Dashboard() {
           )}
 
           {!loading && !error && filteredDevices.length > 0 && (
-            <div className="overflow-x-auto">
-            <table className="table-fixed min-w-[1500px] text-sm">
-              <thead>
-                <tr className="text-left text-mist-400 font-mono text-xs border-b border-ink-700">
-                  <th className="px-4 py-3 w-40">Photo</th>
-                  <th className="px-4 py-3 w-44">Device</th>
-                  <th className="px-4 py-3 w-32">Site</th>
-                  <th className="px-4 py-3 w-24">Map</th>
-                  <th className="px-4 py-3 w-40">Coordinates</th>
-                  <th className="px-4 py-3 w-28">Water Vol</th>
-                  <th className="px-4 py-3 w-24">Temp</th>
-                  <th className="px-4 py-3 w-24">Battery</th>
-                  <th className="px-4 py-3 w-28">Signal (RSRP)</th>
-                  <th className="px-4 py-3 w-28">Input State</th>
-                  <th className="px-4 py-3 w-32">Status</th>
-                  <th className="px-4 py-3 w-28">Last Reading</th>
-                </tr>
-              </thead>
+            <div className="overflow-x-auto table-scroll">
+              <table className="table-fixed min-w-[1650px] text-sm">
+                <thead>
+                  <tr className="text-left text-mist-400 font-mono text-xs border-b border-ink-700">
+                    <th className="px-4 py-3 w-40">Photo</th>
+                    <th className="px-4 py-3 w-44">Device</th>
+                    <th className="px-4 py-3 w-32">Site</th>
+                    <th className="px-4 py-3 w-32">Company</th>
+                    <th className="px-4 py-3 w-24">Map</th>
+                    <th className="px-4 py-3 w-40">Coordinates</th>
+                    <th className="px-4 py-3 w-28">Water Vol</th>
+                    <th className="px-4 py-3 w-24">Temp</th>
+                    <th className="px-4 py-3 w-24">Battery</th>
+                    <th className="px-4 py-3 w-28">Signal (RSRP)</th>
+                    <th className="px-4 py-3 w-28">Input State</th>
+                    <th className="px-4 py-3 w-32">Status</th>
+                    <th className="px-4 py-3 w-28">Last Reading</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {filteredDevices.map((d) => {
                     const status = statusFor(d)
@@ -171,11 +172,12 @@ export default function Dashboard() {
                         </td>
                         <td className="px-4 py-3">
                           <p className="text-mist-200 font-medium">{d.name}</p>
-                          <p className="text-xs text-mist-400 font-mono">{d.device_type} · {d.model ?? '—'}</p>
+                          <p className="text-xs text-mist-400 font-mono">{d.device_type}</p>
                         </td>
                         <td className="px-4 py-3 text-mist-200">{d.site_name ?? '—'}</td>
-                        <td className="px-4 py-3 text-mist-400 font-mono text-xs">
-                          {d.lat != null && d.lng != null ? `${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}` : '—'}
+                        <td className="px-4 py-3">
+                          <p className="text-mist-200">{d.company_name || d.owner_full_name || '—'}</p>
+                          <p className="text-xs font-mono text-mist-400">{d.owner_portal === 'company' ? 'COMPANY' : 'CUSTOMER'}</p>
                         </td>
                         <td className="px-4 py-3">
                           {d.maps_url ? (
@@ -185,6 +187,9 @@ export default function Dashboard() {
                           ) : (
                             <span className="text-mist-400 text-xs">—</span>
                           )}
+                        </td>
+                        <td className="px-4 py-3 text-mist-400 font-mono text-xs">
+                          {d.lat != null && d.lng != null ? `${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}` : '—'}
                         </td>
                         <td className="px-4 py-3 text-mist-200 font-mono">
                           {d.water_volume != null ? `${d.water_volume} L` : '—'}
