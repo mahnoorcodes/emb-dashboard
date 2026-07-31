@@ -32,7 +32,7 @@ function formatAgo(ts) {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, portal } = useAuth()
   const [devices, setDevices] = useState([])
   const [photoUrls, setPhotoUrls] = useState({})
   const [loading, setLoading] = useState(true)
@@ -53,12 +53,13 @@ export default function Dashboard() {
       const withPhotos = (data ?? []).filter((d) => d.photo_paths?.length)
       const urlEntries = await Promise.all(
         withPhotos.map(async (d) => {
-          const urls = await Promise.all(
-            d.photo_paths.map((path) =>
-              supabase.storage.from('device-photos').createSignedUrl(path, 3600).then((r) => r.data?.signedUrl ?? null)
-            )
+          const results = await Promise.all(
+            d.photo_paths.map((path) => supabase.storage.from('device-photos').createSignedUrl(path, 3600))
           )
-          return [d.id, urls.filter(Boolean)]
+          results.forEach((r, i) => {
+            if (r.error) console.error(`Signed URL failed for ${d.id} photo ${i}:`, r.error.message)
+          })
+          return [d.id, results.map((r) => r.data?.signedUrl).filter(Boolean)]
         })
       )
       if (active) setPhotoUrls(Object.fromEntries(urlEntries))
@@ -91,8 +92,10 @@ export default function Dashboard() {
       <main className="p-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-mist-400 mb-1">Signed in as</p>
-            <p className="text-mist-200 font-mono">{user?.email}</p>
+            <p className="mb-1">
+              <span className="text-mist-400">Welcome back, </span>
+              <span className="text-mist-200 font-mono">{user?.user_metadata?.full_name || user?.user_metadata?.company_name || user?.email}</span>
+            </p>
           </div>
           {alertCount > 0 && (
             <span className="inline-flex items-center gap-2 bg-alert-500/10 border border-alert-500 text-alert-500 text-sm font-mono px-3 py-1.5 rounded-md">
