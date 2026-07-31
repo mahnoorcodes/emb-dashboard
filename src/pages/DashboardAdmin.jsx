@@ -171,17 +171,26 @@ if (siteId && (newDevice.lat || newDevice.lng || newDevice.maps_url)) {
 }
 
 const hasReading = ['water_volume', 'temperature', 'battery', 'signal_rsrp', 'input_state']
-    .some((key) => newDevice[key] !== '')
+.some((key) => newDevice[key] !== '')
 if (hasReading) {
-    const { error: telemetryError } = await supabase.from('telemetry').insert({
+const { error: telemetryError } = await supabase.from('telemetry').insert({
+device_id: targetId,
+water_volume: newDevice.water_volume ? parseFloat(newDevice.water_volume) : null,
+temperature: newDevice.temperature ? parseFloat(newDevice.temperature) : null,
+battery: newDevice.battery ? parseFloat(newDevice.battery) : null,
+signal_rsrp: newDevice.signal_rsrp ? parseFloat(newDevice.signal_rsrp) : null,
+state: newDevice.input_state || null,
+})
+if (telemetryError) console.error('Telemetry insert failed:', telemetryError.message)
+
+if (newDevice.input_state === 'closed') {
+const { error: alertError } = await supabase.from('alerts').insert({
     device_id: targetId,
-    water_volume: newDevice.water_volume ? parseFloat(newDevice.water_volume) : null,
-    temperature: newDevice.temperature ? parseFloat(newDevice.temperature) : null,
-    battery: newDevice.battery ? parseFloat(newDevice.battery) : null,
-    signal_rsrp: newDevice.signal_rsrp ? parseFloat(newDevice.signal_rsrp) : null,
-    state: newDevice.input_state || null,
-    })
-    if (telemetryError) console.error('Telemetry insert failed:', telemetryError.message)
+    severity: 'critical',
+    message: 'Leak/alarm relay closed',
+})
+if (alertError) console.error('Alert insert failed:', alertError.message)
+}
 }
 
 setAdding(false)
@@ -465,6 +474,7 @@ return (
             <table className="table-fixed min-w-[1850px] text-sm">
             <thead>
                 <tr className="text-left text-mist-400 font-mono text-xs border-b border-ink-700">
+                <th className="px-4 py-3 w-32">Status</th>
                 <th className="px-4 py-3 w-40">Photo</th>
                 <th className="px-4 py-3 w-32">Device ID</th>
                 <th className="px-4 py-3 w-40">Name / Type</th>
@@ -477,7 +487,6 @@ return (
                 <th className="px-4 py-3 w-24">Battery</th>
                 <th className="px-4 py-3 w-28">Signal (RSRP)</th>
                 <th className="px-4 py-3 w-28">Input State</th>
-                <th className="px-4 py-3 w-32">Status</th>
                 <th className="px-4 py-3 w-28">Last Reading</th>
                 <th className="px-4 py-3 w-28">Actions</th>
                 </tr>

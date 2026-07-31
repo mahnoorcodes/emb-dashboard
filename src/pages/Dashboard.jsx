@@ -144,6 +144,7 @@ export default function Dashboard() {
               <table className="table-fixed min-w-[1650px] text-sm">
                 <thead>
                   <tr className="text-left text-mist-400 font-mono text-xs border-b border-ink-700">
+                    <th className="px-4 py-3 w-32">Status</th>
                     <th className="px-4 py-3 w-40">Photo</th>
                     <th className="px-4 py-3 w-44">Device</th>
                     <th className="px-4 py-3 w-32">Site</th>
@@ -155,7 +156,6 @@ export default function Dashboard() {
                     <th className="px-4 py-3 w-24">Battery</th>
                     <th className="px-4 py-3 w-28">Signal (RSRP)</th>
                     <th className="px-4 py-3 w-28">Input State</th>
-                    <th className="px-4 py-3 w-32">Status</th>
                     <th className="px-4 py-3 w-28">Last Reading</th>
                   </tr>
                 </thead>
@@ -168,6 +168,12 @@ export default function Dashboard() {
                         onClick={() => setSelectedDevice(d)}
                         className="border-b border-ink-700 last:border-0 hover:bg-ink-700/40 transition-colors cursor-pointer"
                       >
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${status.dot}`} />
+                            <span className={`font-mono text-xs ${status.text}`}>{status.label}</span>
+                          </span>
+                        </td>
                         <td className="px-4 py-3">
                           {photoUrls[d.id]?.length > 0 ? (
                             <div className="flex gap-1">
@@ -209,12 +215,6 @@ export default function Dashboard() {
                         <td className="px-4 py-3 text-mist-200 font-mono">{d.battery != null ? `${d.battery}%` : '—'}</td>
                         <td className="px-4 py-3 text-mist-200 font-mono">{d.signal_rsrp != null ? `${d.signal_rsrp} dBm` : '—'}</td>
                         <td className="px-4 py-3 text-mist-200 font-mono text-xs">{d.last_input_state ?? '—'}</td>
-                        <td className="px-4 py-3">
-                          <span className="inline-flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${status.dot}`} />
-                            <span className={`font-mono text-xs ${status.text}`}>{status.label}</span>
-                          </span>
-                        </td>
                         <td className="px-4 py-3 text-mist-400 font-mono text-xs">{formatAgo(d.last_reading_at)}</td>
                       </tr>
                     )
