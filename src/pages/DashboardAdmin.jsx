@@ -36,8 +36,10 @@
     const { user, isPlatformAdmin, loading: authLoading } = useAuth()
     const [devices, setDevices] = useState([])
     const [sites, setSites] = useState([])
+    const [users, setUsers] = useState([])
     const [tickets, setTickets] = useState([])
     const [photoUrls, setPhotoUrls] = useState({})
+    const [photoFiles, setPhotoFiles] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [search, setSearch] = useState('')
@@ -47,7 +49,10 @@
     // ever set — see AuthContext. This is what actually shows every
     // customer's fleet, since RLS grants full read/write when this is true.
     const [showAddForm, setShowAddForm] = useState(false)
-    const [newDevice, setNewDevice] = useState({ id: '', name: '', device_type: DEVICE_TYPES[0], model: '', site_id: '' })
+    const [newDevice, setNewDevice] = useState({
+    id: '', name: '', device_type: DEVICE_TYPES[0], model: '', site_id: '',
+    lat: '', lng: '', maps_url: '', water_volume: '', temperature: '', battery: '', signal_rsrp: '', input_state: '',
+    })
     const [addError, setAddError] = useState(null)
     const [adding, setAdding] = useState(false)
 
@@ -56,10 +61,11 @@
         let active = true
 
         async function load() {
-        const [devicesRes, sitesRes, ticketsRes] = await Promise.all([
+        const [devicesRes, sitesRes, ticketsRes, usersRes] = await Promise.all([
             supabase.from('device_status').select('*').order('name'),
             supabase.from('sites').select('id, name, company_id, companies(name)').order('name'),
             supabase.from('tickets').select('*').order('updated_at', { ascending: false }).limit(20),
+            supabase.from('platform_users').select('*').order('email'),
         ])
         if (!active) return
 
@@ -79,6 +85,8 @@
         }
 
         if (!sitesRes.error) setSites(sitesRes.data ?? [])
+        if (usersRes.error) console.error('platform_users fetch failed:', usersRes.error.message)
+        setUsers(usersRes.data ?? [])
         if (!ticketsRes.error) setTickets(ticketsRes.data ?? [])
         setLoading(false)
         }
@@ -89,23 +97,65 @@
     }, [isPlatformAdmin])
 
     async function handleAddDevice(e) {
-        e.preventDefault()
-        setAdding(true)
-        setAddError(null)
-        const { error } = await supabase.from('devices').insert({
-        id: newDevice.id.trim(),
+    e.preventDefault()
+    setAdding(true)
+    setAddError(null)
+
+    const deviceId = newDevice.id.trim()
+
+    const uploadedPaths = []
+    for (const file of photoFiles) {
+        const path = `${deviceId}/${Date.now()}-${file.name}`
+        const { error: uploadError } = await supabase.storage.from('device-photos').upload(path, file)
+        if (uploadError) {
+        setAdding(false)
+        return setAddError(`Photo upload failed: ${uploadError.message}`)
+        }
+        uploadedPaths.push(path)
+    }
+
+    const { error } = await supabase.from('devices').insert({
+        id: deviceId,
         name: newDevice.name.trim(),
         device_type: newDevice.device_type,
         model: newDevice.model.trim() || null,
         site_id: newDevice.site_id || null,
+        photo_paths: uploadedPaths,
+    })
+    if (error) { setAdding(false); return setAddError(error.message) }
+
+    // coordinates and map url in sites table
+    if (newDevice.site_id && (newDevice.lat || newDevice.lng || newDevice.maps_url)) {
+    await supabase.from('sites').update({
+        lat: newDevice.lat ? parseFloat(newDevice.lat) : null,
+        lng: newDevice.lng ? parseFloat(newDevice.lng) : null,
+        maps_url: newDevice.maps_url || null,
+    }).eq('id', newDevice.site_id)
+    }
+
+    // readings in telematry table
+    const hasReading = ['water_volume', 'temperature', 'battery', 'signal_rsrp', 'input_state']
+        .some((key) => newDevice[key] !== '')
+    if (hasReading) {
+        await supabase.from('telemetry').insert({
+        device_id: deviceId,
+        water_volume: newDevice.water_volume ? parseFloat(newDevice.water_volume) : null,
+        temperature: newDevice.temperature ? parseFloat(newDevice.temperature) : null,
+        battery: newDevice.battery ? parseFloat(newDevice.battery) : null,
+        signal_rsrp: newDevice.signal_rsrp ? parseFloat(newDevice.signal_rsrp) : null,
+        state: newDevice.input_state || null,
         })
-        setAdding(false)
-        if (error) return setAddError(error.message)
-        setNewDevice({ id: '', name: '', device_type: DEVICE_TYPES[0], model: '', site_id: '' })
-        setShowAddForm(false)
-        // Refresh immediately rather than waiting for the next poll
-        const { data } = await supabase.from('device_status').select('*').order('name')
-        setDevices(data ?? [])
+    }
+
+    setAdding(false)
+    setNewDevice({
+        id: '', name: '', device_type: DEVICE_TYPES[0], model: '', site_id: '',
+        lat: '', lng: '', maps_url: '', water_volume: '', temperature: '', battery: '', signal_rsrp: '', input_state: '',
+    })
+    setPhotoFiles([])
+    setShowAddForm(false)
+    const { data } = await supabase.from('device_status').select('*').order('name')
+    setDevices(data ?? [])
     }
 
     if (authLoading) return null
@@ -113,8 +163,7 @@
         return <Navigate to="/dashboard" replace />
     }
 
-    // Client-side filter only — devices already came from an RLS-scoped query,
-    // so this can never surface another company's devices regardless of input.
+    // client side filter
     const q = search.trim().toLowerCase()
     const filteredDevices = q
         ? devices.filter((d) =>
@@ -135,8 +184,7 @@
             </div>
 
             <div className="bg-ink-800 border border-ink-700 rounded-lg p-4 text-xs text-mist-400 font-mono">
-            Platform admin — this view spans every customer company. Access is granted only via
-            a database flag set directly in Supabase, never through any signup or app screen.
+            Platform admin - only LeakDtech & ONE93NINE admins can be added via sql query
             </div>
 
             <section className="bg-ink-800 border border-ink-700 rounded-lg overflow-hidden">
@@ -160,6 +208,7 @@
                     className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
                     />
                 </label>
+
                 <label className="block">
                     <span className="block text-xs font-mono text-mist-400 mb-1.5">NAME</span>
                     <input
@@ -169,6 +218,7 @@
                     className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
                     />
                 </label>
+
                 <label className="block">
                     <span className="block text-xs font-mono text-mist-400 mb-1.5">DEVICE TYPE</span>
                     <select
@@ -179,6 +229,7 @@
                     {DEVICE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                     </select>
                 </label>
+
                 <label className="block">
                     <span className="block text-xs font-mono text-mist-400 mb-1.5">MODEL (optional)</span>
                     <input
@@ -187,20 +238,119 @@
                     className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
                     />
                 </label>
-                <label className="block sm:col-span-2">
-                    <span className="block text-xs font-mono text-mist-400 mb-1.5">SITE (which customer this belongs to)</span>
-                    <select
-                    value={newDevice.site_id}
-                    onChange={(e) => setNewDevice({ ...newDevice, site_id: e.target.value })}
-                    className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
-                    >
-                    <option value="">— Unassigned —</option>
-                    {sites.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name} ({s.companies?.name ?? 'unknown company'})</option>
-                    ))}
-                    </select>
+
+                <label className="block">
+                <span className="block text-xs font-mono text-mist-400 mb-1.5">DEVICE PHOTOS (up to 3)</span>
+                <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                    const files = Array.from(e.target.files).slice(0, 3)
+                    if (e.target.files.length > 3) setAddError('Only the first 3 photos were kept — max 3 allowed.')
+                    setPhotoFiles(files)
+                    }}
+                    className="w-full text-sm text-mist-400"
+                />
+                {photoFiles.length > 0 && (
+                    <p className="text-xs text-mist-400 mt-1">{photoFiles.length} photo{photoFiles.length > 1 ? 's' : ''} selected</p>
+                )}
                 </label>
-                {addError && <p className="text-alert-500 text-sm sm:col-span-2">{addError}</p>}
+
+                <label className="block">
+                <span className="block text-xs font-mono text-mist-400 mb-1.5">GOOGLE MAPS LINK (optional — updates the selected site)</span>
+                <input
+                    type="url"
+                    value={newDevice.maps_url}
+                    onChange={(e) => setNewDevice({ ...newDevice, maps_url: e.target.value })}
+                    placeholder="https://maps.app.goo.gl/..."
+                    className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
+                />
+                </label>
+
+                <label className="block">
+                <span className="block text-xs font-mono text-mist-400 mb-1.5">LATITUDE (optional — updates the selected site)</span>
+                <input
+                    type="number" step="any"
+                    value={newDevice.lat}
+                    onChange={(e) => setNewDevice({ ...newDevice, lat: e.target.value })}
+                    className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
+                />
+                </label>
+                <label className="block">
+                <span className="block text-xs font-mono text-mist-400 mb-1.5">LONGITUDE (optional — updates the selected site)</span>
+                <input
+                    type="number" step="any"
+                    value={newDevice.lng}
+                    onChange={(e) => setNewDevice({ ...newDevice, lng: e.target.value })}
+                    className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
+                />
+                </label>
+                <label className="block">
+                <span className="block text-xs font-mono text-mist-400 mb-1.5">WATER VOLUME (L, optional initial reading)</span>
+                <input
+                    type="number" step="any"
+                    value={newDevice.water_volume}
+                    onChange={(e) => setNewDevice({ ...newDevice, water_volume: e.target.value })}
+                    className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
+                />
+                </label>
+                <label className="block">
+                <span className="block text-xs font-mono text-mist-400 mb-1.5">TEMPERATURE (°C, optional initial reading)</span>
+                <input
+                    type="number" step="any"
+                    value={newDevice.temperature}
+                    onChange={(e) => setNewDevice({ ...newDevice, temperature: e.target.value })}
+                    className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
+                />
+                </label>
+                <label className="block">
+                <span className="block text-xs font-mono text-mist-400 mb-1.5">BATTERY (%, optional initial reading)</span>
+                <input
+                    type="number" step="any"
+                    value={newDevice.battery}
+                    onChange={(e) => setNewDevice({ ...newDevice, battery: e.target.value })}
+                    className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
+                />
+                </label>
+                <label className="block">
+                <span className="block text-xs font-mono text-mist-400 mb-1.5">SIGNAL RSRP (dBm, optional initial reading)</span>
+                <input
+                    type="number" step="any"
+                    value={newDevice.signal_rsrp}
+                    onChange={(e) => setNewDevice({ ...newDevice, signal_rsrp: e.target.value })}
+                    className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
+                />
+                </label>
+                <label className="block">
+                <span className="block text-xs font-mono text-mist-400 mb-1.5">INPUT STATE (optional initial reading)</span>
+                <select
+                    value={newDevice.input_state}
+                    onChange={(e) => setNewDevice({ ...newDevice, input_state: e.target.value })}
+                    className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
+                >
+                    <option value="">— Not set —</option>
+                    <option value="open">Open (no alarm)</option>
+                    <option value="closed">Closed (alarm)</option>
+                </select>
+                </label>
+
+                <label className="block sm:col-span-2">
+                <span className="block text-xs font-mono text-mist-400 mb-1.5">ASSIGN TO CUSTOMER </span>
+                <select
+                    value={newDevice.assigned_user_id ?? ''}
+                    onChange={(e) => setNewDevice({ ...newDevice, assigned_user_id: e.target.value })}
+                    className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
+                >
+                <option value="">— Not assigned to a specific user —</option>
+                {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                    {u.full_name ?? 'Unnamed'} ({u.email})
+                </option>
+                ))}
+                </select>
+                </label>
+
                 <div className="sm:col-span-2">
                     <button
                     type="submit"
@@ -210,6 +360,8 @@
                     {adding ? 'Adding…' : 'Add device'}
                     </button>
                 </div>
+
+                {addError && <p className="text-alert-500 text-sm sm:col-span-2">{addError}</p>}
                 </form>
             )}
             </section>
@@ -242,31 +394,37 @@
 
             {!loading && !error && filteredDevices.length > 0 && (
                 <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead>
+                <table className="table-fixed min-w-[1700px] text-sm">
+                <thead>
                     <tr className="text-left text-mist-400 font-mono text-xs border-b border-ink-700">
-                        <th className="px-4 py-3">Photo</th>
-                        <th className="px-4 py-3">Device ID</th>
-                        <th className="px-4 py-3">Name / Type</th>
-                        <th className="px-4 py-3">Site</th>
-                        <th className="px-4 py-3">Coordinates</th>
-                        <th className="px-4 py-3">Water Vol</th>
-                        <th className="px-4 py-3">Temp</th>
-                        <th className="px-4 py-3">Battery</th>
-                        <th className="px-4 py-3">Signal (RSRP)</th>
-                        <th className="px-4 py-3">Input State</th>
-                        <th className="px-4 py-3">Status</th>
-                        <th className="px-4 py-3">Last Reading</th>
+                    <th className="px-4 py-3 w-40">Photo</th>
+                    <th className="px-4 py-3 w-32">Device ID</th>
+                    <th className="px-4 py-3 w-40">Name / Type</th>
+                    <th className="px-4 py-3 w-32">Site</th>
+                    <th className="px-4 py-3 w-32">Company</th>
+                    <th className="px-4 py-3 w-24">Map</th>
+                    <th className="px-4 py-3 w-40">Coordinates</th>
+                    <th className="px-4 py-3 w-28">Water Vol</th>
+                    <th className="px-4 py-3 w-24">Temp</th>
+                    <th className="px-4 py-3 w-24">Battery</th>
+                    <th className="px-4 py-3 w-28">Signal (RSRP)</th>
+                    <th className="px-4 py-3 w-28">Input State</th>
+                    <th className="px-4 py-3 w-32">Status</th>
+                    <th className="px-4 py-3 w-28">Last Reading</th>
                     </tr>
-                    </thead>
+                </thead>
                     <tbody>
                     {filteredDevices.map((d) => {
                         const status = statusFor(d)
                         return (
                         <tr key={d.id} className="border-b border-ink-700 last:border-0 hover:bg-ink-700/40 transition-colors">
                             <td className="px-4 py-3">
-                            {photoUrls[d.id] ? (
-                                <img src={photoUrls[d.id]} alt={d.name} className="w-10 h-10 rounded object-cover" />
+                            {photoUrls[d.id]?.length > 0 ? (
+                                <div className="flex gap-1">
+                                {photoUrls[d.id].map((url, i) => (
+                                    <img key={i} src={url} alt={`${d.name} ${i + 1}`} className="w-10 h-10 rounded object-cover" />
+                                ))}
+                                </div>
                             ) : (
                                 <div className="w-10 h-10 rounded bg-ink-700 flex items-center justify-center text-mist-400 text-xs">—</div>
                             )}
@@ -277,9 +435,17 @@
                             <p className="text-xs text-mist-400 font-mono">{d.device_type} · {d.model ?? '—'}</p>
                             </td>
                             <td className="px-4 py-3 text-mist-200">{d.site_name ?? '—'}</td>
-                            <td className="px-4 py-3 text-mist-400 font-mono text-xs">
-                            {d.lat != null && d.lng != null ? `${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}` : '—'}
+                            <td className="px-4 py-3 text-mist-200">{d.company_name ?? '—'}</td>
+                            <td className="px-4 py-3">
+                            {d.maps_url ? (
+                                <a href={d.maps_url} target="_blank" rel="noopener noreferrer" className="text-brand-500 hover:underline text-xs">
+                                Open ↗
+                                </a>
+                            ) : (
+                                <span className="text-mist-400 text-xs">—</span>
+                            )}
                             </td>
+                            <td className="px-4 py-3 text-mist-400 font-mono text-xs">{d.lat != null && d.lng != null ? `${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}` : '—'}</td>
                             <td className="px-4 py-3 text-mist-200 font-mono">{d.water_volume != null ? `${d.water_volume} L` : '—'}</td>
                             <td className="px-4 py-3 text-mist-200 font-mono">{d.temperature != null ? `${d.temperature}°C` : '—'}</td>
                             <td className="px-4 py-3 text-mist-200 font-mono">{d.battery != null ? `${d.battery}%` : '—'}</td>

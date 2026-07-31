@@ -33,6 +33,7 @@ function formatAgo(ts) {
 export default function Dashboard() {
   const { user } = useAuth()
   const [devices, setDevices] = useState([])
+  const [photoUrls, setPhotoUrls] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
@@ -43,8 +44,22 @@ export default function Dashboard() {
     async function load() {
       const { data, error } = await supabase.from('device_status').select('*').order('name')
       if (!active) return
-      if (error) setError(error.message)
-      else { setDevices(data ?? []); setError(null) }
+      if (error) { setError(error.message); setLoading(false); return }
+      setDevices(data ?? [])
+      setError(null)
+
+      const withPhotos = (data ?? []).filter((d) => d.photo_paths?.length)
+      const urlEntries = await Promise.all(
+        withPhotos.map(async (d) => {
+          const urls = await Promise.all(
+            d.photo_paths.map((path) =>
+              supabase.storage.from('device-photos').createSignedUrl(path, 3600).then((r) => r.data?.signedUrl ?? null)
+            )
+          )
+          return [d.id, urls.filter(Boolean)]
+        })
+      )
+      if (active) setPhotoUrls(Object.fromEntries(urlEntries))
       setLoading(false)
     }
 
@@ -121,40 +136,72 @@ export default function Dashboard() {
 
           {!loading && !error && filteredDevices.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-mist-400 font-mono text-xs border-b border-ink-700">
-                    <th className="px-6 py-3">Device</th>
-                    <th className="px-6 py-3">Site</th>
-                    <th className="px-6 py-3">Water Volume</th>
-                    <th className="px-6 py-3">Temp</th>
-                    <th className="px-6 py-3">Status</th>
-                    <th className="px-6 py-3">Last Reading</th>
-                  </tr>
-                </thead>
+            <table className="table-fixed min-w-[1500px] text-sm">
+              <thead>
+                <tr className="text-left text-mist-400 font-mono text-xs border-b border-ink-700">
+                  <th className="px-4 py-3 w-40">Photo</th>
+                  <th className="px-4 py-3 w-44">Device</th>
+                  <th className="px-4 py-3 w-32">Site</th>
+                  <th className="px-4 py-3 w-24">Map</th>
+                  <th className="px-4 py-3 w-40">Coordinates</th>
+                  <th className="px-4 py-3 w-28">Water Vol</th>
+                  <th className="px-4 py-3 w-24">Temp</th>
+                  <th className="px-4 py-3 w-24">Battery</th>
+                  <th className="px-4 py-3 w-28">Signal (RSRP)</th>
+                  <th className="px-4 py-3 w-28">Input State</th>
+                  <th className="px-4 py-3 w-32">Status</th>
+                  <th className="px-4 py-3 w-28">Last Reading</th>
+                </tr>
+              </thead>
                 <tbody>
                   {filteredDevices.map((d) => {
                     const status = statusFor(d)
                     return (
                       <tr key={d.id} className="border-b border-ink-700 last:border-0 hover:bg-ink-700/40 transition-colors">
-                        <td className="px-6 py-4">
-                          <p className="text-mist-200 font-medium">{d.name}</p>
-                          <p className="text-xs text-mist-400 font-mono">{d.device_type}</p>
+                        <td className="px-4 py-3">
+                          {photoUrls[d.id]?.length > 0 ? (
+                            <div className="flex gap-1">
+                              {photoUrls[d.id].map((url, i) => (
+                                <img key={i} src={url} alt={`${d.name} ${i + 1}`} className="w-10 h-10 rounded object-cover" />
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded bg-ink-700 flex items-center justify-center text-mist-400 text-xs">—</div>
+                          )}
                         </td>
-                        <td className="px-6 py-4 text-mist-200">{d.site_name ?? '—'}</td>
-                        <td className="px-6 py-4 text-mist-200 font-mono">
+                        <td className="px-4 py-3">
+                          <p className="text-mist-200 font-medium">{d.name}</p>
+                          <p className="text-xs text-mist-400 font-mono">{d.device_type} · {d.model ?? '—'}</p>
+                        </td>
+                        <td className="px-4 py-3 text-mist-200">{d.site_name ?? '—'}</td>
+                        <td className="px-4 py-3 text-mist-400 font-mono text-xs">
+                          {d.lat != null && d.lng != null ? `${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}` : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          {d.maps_url ? (
+                            <a href={d.maps_url} target="_blank" rel="noopener noreferrer" className="text-brand-500 hover:underline text-xs">
+                              Open ↗
+                            </a>
+                          ) : (
+                            <span className="text-mist-400 text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-mist-200 font-mono">
                           {d.water_volume != null ? `${d.water_volume} L` : '—'}
                         </td>
-                        <td className="px-6 py-4 text-mist-200 font-mono">
+                        <td className="px-4 py-3 text-mist-200 font-mono">
                           {d.temperature != null ? `${d.temperature}°C` : '—'}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3 text-mist-200 font-mono">{d.battery != null ? `${d.battery}%` : '—'}</td>
+                        <td className="px-4 py-3 text-mist-200 font-mono">{d.signal_rsrp != null ? `${d.signal_rsrp} dBm` : '—'}</td>
+                        <td className="px-4 py-3 text-mist-200 font-mono text-xs">{d.last_input_state ?? '—'}</td>
+                        <td className="px-4 py-3">
                           <span className="inline-flex items-center gap-2">
                             <span className={`w-2 h-2 rounded-full ${status.dot}`} />
                             <span className={`font-mono text-xs ${status.text}`}>{status.label}</span>
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-mist-400 font-mono text-xs">{formatAgo(d.last_reading_at)}</td>
+                        <td className="px-4 py-3 text-mist-400 font-mono text-xs">{formatAgo(d.last_reading_at)}</td>
                       </tr>
                     )
                   })}

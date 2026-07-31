@@ -28,7 +28,7 @@
         <div className="min-h-screen bg-ink-950">
         <Navbar title="PROFILE" />
 
-        <main className="p-8 max-w-2xl">
+        <main className="p-8 max-w-2xl mx-auto">
             <div className="bg-ink-800 border border-ink-700 rounded-lg overflow-hidden mb-6">
             <div className="px-6 py-4 border-b border-ink-700">
                 <p className="font-mono text-xs tracking-widest text-brand-500">ACCOUNT DETAILS</p>
@@ -68,7 +68,7 @@
                 <button
                     onClick={handleResetPassword}
                     disabled={sending}
-                    className="bg-ink-700 hover:bg-ink-600 disabled:opacity-50 text-mist-200 text-sm font-medium px-4 py-2 rounded-md transition-colors"
+                    className="bg-ink-700 hover:bg-ink-600 disabled:opacity-50 text-mist-200 text-sm font-medium px-4 py-2 rounded-md transition-colors mx-auto block"
                 >
                     {sending ? 'Sending…' : 'Send password reset email'}
                 </button>

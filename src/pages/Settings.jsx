@@ -76,8 +76,8 @@
         <div className="min-h-screen bg-ink-950">
         <Navbar title="SETTINGS" />
 
-        <main className="p-8 max-w-2xl">
-            <form onSubmit={handleSave} className="space-y-6">
+        <main className="p-8 max-w-2xl mx-auto">
+            <form onSubmit={handleSave} className="space-y-6 mx-auto max-w-2xl">
             <section className="bg-ink-800 border border-ink-700 rounded-lg overflow-hidden">
                 <div className="px-6 py-4 border-b border-ink-700">
                 <p className="font-mono text-xs tracking-widest text-brand-500">USER INFORMATION</p>
@@ -141,7 +141,7 @@
             <button
                 type="submit"
                 disabled={saving}
-                className="bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-ink-950 font-semibold px-5 py-2 rounded-md transition-colors"
+                className="bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-ink-950 font-semibold px-5 py-2 rounded-md transition-colors mx-auto block"
             >
                 {saving ? 'Saving…' : 'Save settings'}
             </button>
