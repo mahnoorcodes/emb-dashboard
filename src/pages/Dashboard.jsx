@@ -145,7 +145,7 @@ export default function Dashboard() {
                 <thead>
                   <tr className="text-left text-mist-400 font-mono text-xs border-b border-ink-700">
                     <th className="px-4 py-3 w-32">Status</th>
-                    <th className="px-4 py-3 w-40">Photo</th>
+                    <th className="px-4 py-3 w-16">Photo</th>
                     <th className="px-4 py-3 w-44">Device</th>
                     <th className="px-4 py-3 w-32">Site</th>
                     <th className="px-4 py-3 w-32">Company</th>
@@ -176,11 +176,7 @@ export default function Dashboard() {
                         </td>
                         <td className="px-4 py-3">
                           {photoUrls[d.id]?.length > 0 ? (
-                            <div className="flex gap-1">
-                              {photoUrls[d.id].map((url, i) => (
-                                <img key={i} src={url} alt={`${d.name} ${i + 1}`} className="w-10 h-10 rounded object-cover" />
-                              ))}
-                            </div>
+                            <img src={photoUrls[d.id][0]} alt={d.name} className="w-10 h-10 rounded object-cover" />
                           ) : (
                             <div className="w-10 h-10 rounded bg-ink-700 flex items-center justify-center text-mist-400 text-xs">—</div>
                           )}

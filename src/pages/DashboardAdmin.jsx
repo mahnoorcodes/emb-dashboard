@@ -475,7 +475,7 @@ return (
             <thead>
                 <tr className="text-left text-mist-400 font-mono text-xs border-b border-ink-700">
                 <th className="px-4 py-3 w-32">Status</th>
-                <th className="px-4 py-3 w-40">Photo</th>
+                <th className="px-4 py-3 w-16">Photo</th>
                 <th className="px-4 py-3 w-32">Device ID</th>
                 <th className="px-4 py-3 w-40">Name / Type</th>
                 <th className="px-4 py-3 w-32">Site</th>
@@ -501,15 +501,20 @@ return (
                     className="border-b border-ink-700 last:border-0 hover:bg-ink-700/40 transition-colors cursor-pointer"
                     >
                     <td className="px-4 py-3">
-                        {photoUrls[d.id]?.length > 0 ? (
-                        <div className="flex gap-1">
-                            {photoUrls[d.id].map((url, i) => (
-                            <img key={i} src={url} alt={`${d.name} ${i + 1}`} className="w-10 h-10 rounded object-cover" />
-                            ))}
-                        </div>
-                        ) : (
-                        <div className="w-10 h-10 rounded bg-ink-700 flex items-center justify-center text-mist-400 text-xs">—</div>
+                        <span className="inline-flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${status.dot}`} />
+                        <span className={`font-mono text-xs ${status.text}`}>{status.label}</span>
+                        </span>
+                        {d.latest_alert_message && (
+                        <p className="text-xs text-alert-500 mt-1 max-w-[160px]">{d.latest_alert_message}</p>
                         )}
+                    </td>
+                    <td className="px-4 py-3">
+                    {photoUrls[d.id]?.length > 0 ? (
+                        <img src={photoUrls[d.id][0]} alt={d.name} className="w-10 h-10 rounded object-cover" />
+                    ) : (
+                        <div className="w-10 h-10 rounded bg-ink-700 flex items-center justify-center text-mist-400 text-xs">—</div>
+                    )}
                     </td>
                     <td className="px-4 py-3 text-mist-400 font-mono text-xs">{d.id}</td>
                     <td className="px-4 py-3">
@@ -517,7 +522,10 @@ return (
                         <p className="text-xs text-mist-400 font-mono">{d.device_type} · {d.model ?? '—'}</p>
                     </td>
                     <td className="px-4 py-3 text-mist-200">{d.site_name ?? '—'}</td>
-                    <td className="px-4 py-3 text-mist-200">{d.company_name ?? '—'}</td>
+                    <td className="px-4 py-3">
+                    <p className="text-mist-200">{d.company_name || d.owner_full_name || '—'}</p>
+                    <p className="text-xs font-mono text-mist-400">{d.owner_portal === 'company' ? 'COMPANY' : 'CUSTOMER'}</p>
+                    </td>
                     <td className="px-4 py-3">
                         {d.maps_url ? (
                         <a href={d.maps_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-brand-500 hover:underline text-xs">
@@ -535,15 +543,6 @@ return (
                     <td className="px-4 py-3 text-mist-200 font-mono">{d.battery != null ? `${d.battery}%` : '—'}</td>
                     <td className="px-4 py-3 text-mist-200 font-mono">{d.signal_rsrp != null ? `${d.signal_rsrp} dBm` : '—'}</td>
                     <td className="px-4 py-3 text-mist-200 font-mono text-xs">{d.last_input_state ?? '—'}</td>
-                    <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${status.dot}`} />
-                        <span className={`font-mono text-xs ${status.text}`}>{status.label}</span>
-                        </span>
-                        {d.latest_alert_message && (
-                        <p className="text-xs text-alert-500 mt-1 max-w-[160px]">{d.latest_alert_message}</p>
-                        )}
-                    </td>
                     <td className="px-4 py-3 text-mist-400 font-mono text-xs">{formatAgo(d.last_reading_at)}</td>
                     <td className="px-4 py-3">
                         <div className="flex gap-2">
