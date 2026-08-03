@@ -3,6 +3,7 @@ import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import Navbar from '../components/Navbar'
 import DeviceDetailPanel from '../components/DeviceDetailPanel'
+import DeviceMap from '../components/DeviceMap'
 
 const STALE_MINUTES = 30
 const REFRESH_MS = 30000
@@ -39,6 +40,7 @@ export default function Dashboard() {
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [selectedDevice, setSelectedDevice] = useState(null)
+  const [view, setView] = useState('table')
 
   useEffect(() => {
     let active = true
@@ -108,38 +110,58 @@ export default function Dashboard() {
         <div className="bg-ink-800 border border-ink-700 rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-ink-700 flex items-center justify-between gap-4">
             <p className="font-mono text-xs tracking-widest text-brand-500 whitespace-nowrap">DEVICES</p>
+            <div className="flex bg-ink-900 border border-ink-600 rounded-md p-0.5">
+              <button
+                onClick={() => setView('table')}
+                className={`px-3 py-1 text-xs font-mono rounded transition-colors ${
+                  view === 'table' ? 'bg-brand-500 text-ink-950' : 'text-mist-400 hover:text-brand-500'
+                }`}
+              >
+                Table
+              </button>
+              <button
+                onClick={() => setView('map')}
+                className={`px-3 py-1 text-xs font-mono rounded transition-colors ${
+                  view === 'map' ? 'bg-brand-500 text-ink-950' : 'text-mist-400 hover:text-brand-500'
+                }`}
+              >
+                Map
+              </button>
+            </div>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by device name, type, or site…"
               className="flex-1 max-w-sm bg-ink-900 border border-ink-600 rounded-md px-3 py-1.5 text-sm text-mist-200
-                         placeholder:text-ink-600 focus:outline-none focus:ring-2 focus:ring-live-600 focus:border-live-600
-                         transition-colors"
+                        placeholder:text-ink-600 focus:outline-none focus:ring-2 focus:ring-live-600 focus:border-live-600
+                        transition-colors"
             />
             <p className="text-xs text-mist-400 font-mono whitespace-nowrap">
               {filteredDevices.length} of {devices.length} · refreshes every 30s
             </p>
           </div>
 
-          {loading && <p className="px-6 py-10 text-center text-mist-400">Loading devices…</p>}
+          {view === 'table' && loading && <p className="px-6 py-10 text-center text-mist-400">Loading devices…</p>}
 
-          {!loading && error && (
+          {view === 'table' && !loading && error && (
             <p className="px-6 py-10 text-center text-alert-500">Couldn't load devices: {error}</p>
           )}
 
-          {!loading && !error && devices.length === 0 && (
+          {view === 'table' && !loading && !error && devices.length === 0 && (
             <div className="px-6 py-10 text-center">
               <p className="text-mist-200 mb-1">No devices yet</p>
               <p className="text-sm text-mist-400">Devices will appear here once they're registered and reporting.</p>
             </div>
           )}
 
-          {!loading && !error && devices.length > 0 && filteredDevices.length === 0 && (
+          {view === 'table' && !loading && !error && devices.length > 0 && filteredDevices.length === 0 && (
             <p className="px-6 py-10 text-center text-mist-400">No devices match "{search}".</p>
           )}
 
-          {!loading && !error && filteredDevices.length > 0 && (
+          {view === 'map' && !loading && !error && <DeviceMap devices={filteredDevices} />}
+
+          {view === 'table' && !loading && !error && filteredDevices.length > 0 && (
             <div className="overflow-x-auto table-scroll">
               <table className="table-fixed min-w-[1650px] text-sm">
                 <thead>

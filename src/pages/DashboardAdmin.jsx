@@ -161,13 +161,15 @@ if (editingId) {
 if (saveError) { setAdding(false); return setAddError(saveError.message) }
 
 const targetId = editingId ?? deviceId
-if (siteId && (newDevice.lat || newDevice.lng || newDevice.maps_url)) {
-    const { error: siteError } = await supabase.from('sites').update({
-    lat: newDevice.lat ? parseFloat(newDevice.lat) : null,
-    lng: newDevice.lng ? parseFloat(newDevice.lng) : null,
-    maps_url: newDevice.maps_url || null,
-    }).eq('id', siteId)
-    if (siteError) console.error('Site update failed:', siteError.message)
+if (siteId) {
+    const siteUpdate = {}
+    if (newDevice.lat) siteUpdate.lat = parseFloat(newDevice.lat)
+    if (newDevice.lng) siteUpdate.lng = parseFloat(newDevice.lng)
+    if (newDevice.maps_url) siteUpdate.maps_url = newDevice.maps_url
+    if (Object.keys(siteUpdate).length > 0) {
+        const { error: siteError } = await supabase.from('sites').update(siteUpdate).eq('id', siteId)
+        if (siteError) console.error('Site update failed:', siteError.message)
+  }
 }
 
 const hasReading = ['water_volume', 'temperature', 'battery', 'signal_rsrp', 'input_state']
