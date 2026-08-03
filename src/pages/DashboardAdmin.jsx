@@ -4,6 +4,7 @@ import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import Navbar from '../components/Navbar'
 import DeviceDetailPanel from '../components/DeviceDetailPanel'
+import DeviceFilters, { defaultFilters, applyFilters } from '../components/DeviceFilters'
 
 const STALE_MINUTES = 30
 const REFRESH_MS = 30000
@@ -45,15 +46,13 @@ const [loading, setLoading] = useState(true)
 const [error, setError] = useState(null)
 const [search, setSearch] = useState('')
 const [editingId, setEditingId] = useState(null)
+const [editingSiteId, setEditingSiteId] = useState(null)
 const [selectedDevice, setSelectedDevice] = useState(null)
+const [filters, setFilters] = useState(defaultFilters)
 
-// Gate: the ONLY thing that grants this page is a database-backed flag
-// (app_users.is_platform_admin) that no signup flow or client code can
-// ever set — see AuthContext. This is what actually shows every
-// customer's fleet, since RLS grants full read/write when this is true.
 const [showAddForm, setShowAddForm] = useState(false)
 const [newDevice, setNewDevice] = useState({
-id: '', name: '', device_type: DEVICE_TYPES[0], model: '', site_id: '', assigned_user_id: '',
+id: '', name: '', device_type: DEVICE_TYPES[0], model: '', site_name: '', assigned_user_id: '',
 lat: '', lng: '', maps_url: '', water_volume: '', temperature: '', battery: '', signal_rsrp: '', input_state: '',
 })
 const [addError, setAddError] = useState(null)
@@ -77,7 +76,6 @@ async function load() {
     setDevices(devicesRes.data ?? [])
     setError(null)
 
-    // Multi-photo aware: each device can have up to 3 photo_paths
     const withPhotos = (devicesRes.data ?? []).filter((d) => d.photo_paths?.length)
     const urlEntries = await Promise.all(
         withPhotos.map(async (d) => {
@@ -110,21 +108,55 @@ setAdding(true)
 setAddError(null)
 
 const deviceId = newDevice.id.trim()
+const typedSiteName = newDevice.site_name.trim()
 
-let siteId = null
+// Resolve which company this device belongs to, if a customer was picked
+let companyId = null
 if (newDevice.assigned_user_id) {
     const selectedUser = users.find((u) => u.id === newDevice.assigned_user_id)
     if (!selectedUser?.company_id) {
     setAdding(false)
     return setAddError('That user has no company on file — cannot assign a device to them yet.')
     }
-    const { data: existingSite } = await supabase
-    .from('sites').select('id').eq('company_id', selectedUser.company_id).limit(1).maybeSingle()
+    companyId = selectedUser.company_id
+}
+
+// Resolve the site: find-by-name-within-company, or create a new one.
+// Typing a name never blanks an existing link — it only ever finds or creates.
+let siteId = null
+if (typedSiteName) {
+    let query = supabase.from('sites').select('id').eq('name', typedSiteName)
+    if (companyId) query = query.eq('company_id', companyId)
+    const { data: existingSite } = await query.limit(1).maybeSingle()
+
     if (existingSite) {
     siteId = existingSite.id
     } else {
+    let targetCompanyId = companyId
+    if (!targetCompanyId && editingId && editingSiteId) {
+        const { data: currentSite } = await supabase.from('sites').select('company_id').eq('id', editingSiteId).maybeSingle()
+        targetCompanyId = currentSite?.company_id ?? null
+    }
+    if (!targetCompanyId) {
+        setAdding(false)
+        return setAddError('Pick "Assign to Customer" too, so this new site knows which company it belongs to.')
+    }
     const { data: newSite, error: siteCreateError } = await supabase
-        .from('sites').insert({ company_id: selectedUser.company_id, name: `${selectedUser.company_name ?? 'Customer'} Site` })
+        .from('sites').insert({ company_id: targetCompanyId, name: typedSiteName })
+        .select('id').single()
+    if (siteCreateError) { setAdding(false); return setAddError(siteCreateError.message) }
+    siteId = newSite.id
+    }
+} else if (companyId) {
+    // No site name typed, but a customer was picked — reuse/create their default site
+    const { data: existingSite } = await supabase
+    .from('sites').select('id').eq('company_id', companyId).limit(1).maybeSingle()
+    if (existingSite) {
+    siteId = existingSite.id
+    } else {
+    const selectedUser = users.find((u) => u.id === newDevice.assigned_user_id)
+    const { data: newSite, error: siteCreateError } = await supabase
+        .from('sites').insert({ company_id: companyId, name: `${selectedUser?.company_name ?? 'Customer'} Site` })
         .select('id').single()
     if (siteCreateError) { setAdding(false); return setAddError(siteCreateError.message) }
     siteId = newSite.id
@@ -143,12 +175,17 @@ const deviceRow = {
     name: newDevice.name.trim(),
     device_type: newDevice.device_type,
     model: newDevice.model.trim() || null,
-    site_id: siteId,
+}
+// Only touch site_id if we actually resolved one, or this is a brand-new
+// device with nothing picked at all (genuinely unassigned on creation).
+if (siteId) {
+    deviceRow.site_id = siteId
+} else if (!editingId) {
+    deviceRow.site_id = null
 }
 
 let saveError
 if (editingId) {
-    // Only overwrite photos if new ones were actually picked — otherwise keep existing
     if (uploadedPaths.length > 0) deviceRow.photo_paths = uploadedPaths
     const { error } = await supabase.from('devices').update(deviceRow).eq('id', editingId)
     saveError = error
@@ -161,50 +198,56 @@ if (editingId) {
 if (saveError) { setAdding(false); return setAddError(saveError.message) }
 
 const targetId = editingId ?? deviceId
-if (siteId) {
+const finalSiteId = siteId || editingSiteId
+if (finalSiteId) {
     const siteUpdate = {}
     if (newDevice.lat) siteUpdate.lat = parseFloat(newDevice.lat)
     if (newDevice.lng) siteUpdate.lng = parseFloat(newDevice.lng)
     if (newDevice.maps_url) siteUpdate.maps_url = newDevice.maps_url
     if (Object.keys(siteUpdate).length > 0) {
-        const { error: siteError } = await supabase.from('sites').update(siteUpdate).eq('id', siteId)
-        if (siteError) console.error('Site update failed:', siteError.message)
-  }
+    const { error: siteError } = await supabase.from('sites').update(siteUpdate).eq('id', finalSiteId)
+    if (siteError) console.error('Site update failed:', siteError.message)
+    }
 }
 
 const hasReading = ['water_volume', 'temperature', 'battery', 'signal_rsrp', 'input_state']
-.some((key) => newDevice[key] !== '')
+    .some((key) => newDevice[key] !== '')
 if (hasReading) {
-const { error: telemetryError } = await supabase.from('telemetry').insert({
-device_id: targetId,
-water_volume: newDevice.water_volume ? parseFloat(newDevice.water_volume) : null,
-temperature: newDevice.temperature ? parseFloat(newDevice.temperature) : null,
-battery: newDevice.battery ? parseFloat(newDevice.battery) : null,
-signal_rsrp: newDevice.signal_rsrp ? parseFloat(newDevice.signal_rsrp) : null,
-state: newDevice.input_state || null,
-})
-if (telemetryError) console.error('Telemetry insert failed:', telemetryError.message)
-
-if (newDevice.input_state === 'closed') {
-const { error: alertError } = await supabase.from('alerts').insert({
+    const { error: telemetryError } = await supabase.from('telemetry').insert({
     device_id: targetId,
-    severity: 'critical',
-    message: 'Leak/alarm relay closed',
-})
-if (alertError) console.error('Alert insert failed:', alertError.message)
-}
+    water_volume: newDevice.water_volume ? parseFloat(newDevice.water_volume) : null,
+    temperature: newDevice.temperature ? parseFloat(newDevice.temperature) : null,
+    battery: newDevice.battery ? parseFloat(newDevice.battery) : null,
+    signal_rsrp: newDevice.signal_rsrp ? parseFloat(newDevice.signal_rsrp) : null,
+    state: newDevice.input_state || null,
+    })
+    if (telemetryError) console.error('Telemetry insert failed:', telemetryError.message)
+
+    if (newDevice.input_state === 'closed') {
+    const { error: alertError } = await supabase.from('alerts').insert({
+        device_id: targetId,
+        severity: 'critical',
+        message: 'Leak/alarm relay closed',
+    })
+    if (alertError) console.error('Alert insert failed:', alertError.message)
+    }
 }
 
 setAdding(false)
 resetForm()
-const { data } = await supabase.from('device_status').select('*').order('name')
+const [{ data }, { data: sitesData }] = await Promise.all([
+    supabase.from('device_status').select('*').order('name'),
+    supabase.from('sites').select('id, name, company_id, companies(name)').order('name'),
+])
 setDevices(data ?? [])
+setSites(sitesData ?? [])
 }
 
 function resetForm() {
 setEditingId(null)
+setEditingSiteId(null)
 setNewDevice({
-    id: '', name: '', device_type: DEVICE_TYPES[0], model: '', site_id: '', assigned_user_id: '',
+    id: '', name: '', device_type: DEVICE_TYPES[0], model: '', site_name: '', assigned_user_id: '',
     lat: '', lng: '', maps_url: '', water_volume: '', temperature: '', battery: '', signal_rsrp: '', input_state: '',
 })
 setPhotoFiles([])
@@ -213,9 +256,10 @@ setShowAddForm(false)
 
 function handleEditClick(d) {
 setEditingId(d.id)
+setEditingSiteId(d.site_id ?? null)
 setNewDevice({
-    id: d.id, name: d.name, device_type: d.device_type, model: d.model ?? '', site_id: d.site_id ?? '',
-    assigned_user_id: '', // can't reverse-lookup which user without another query — re-pick if reassigning
+    id: d.id, name: d.name, device_type: d.device_type, model: d.model ?? '', site_name: d.site_name ?? '',
+    assigned_user_id: '',
     lat: d.lat ?? '', lng: d.lng ?? '', maps_url: d.maps_url ?? '',
     water_volume: d.water_volume ?? '', temperature: d.temperature ?? '',
     battery: d.battery ?? '', signal_rsrp: d.signal_rsrp ?? '', input_state: d.last_input_state ?? '',
@@ -239,16 +283,15 @@ if (!isPlatformAdmin) {
 return <Navigate to="/dashboard" replace />
 }
 
-// Client-side filter only — devices already came from an RLS-scoped query,
-// so this can never surface another company's devices regardless of input.
 const q = search.trim().toLowerCase()
-const filteredDevices = q
+const searched = q
 ? devices.filter((d) =>
-        [d.name, d.device_type, d.site_name, d.model, d.company_name, d.owner_full_name]
+    [d.name, d.device_type, d.site_name, d.model, d.company_name, d.owner_full_name]
         .filter(Boolean)
-        .some((field) => String(field).toLowerCase().includes(q))
+        .some((field) => field.toLowerCase().includes(q))
     )
 : devices
+const filteredDevices = applyFilters(searched, filters, statusFor)
 
 return (
 <div className="min-h-screen bg-ink-950">
@@ -315,12 +358,16 @@ return (
             </label>
 
             <label className="block">
-            <span className="block text-xs font-mono text-mist-400 mb-1.5">SITE</span>
+            <span className="block text-xs font-mono text-mist-400 mb-1.5">SITE (type any name — reuses if it already exists)</span>
             <input
-                value={newDevice.site}
-                onChange={(e) => setNewDevice({ ...newDevice, site: e.target.value })}
+                value={newDevice.site_name}
+                onChange={(e) => setNewDevice({ ...newDevice, site_name: e.target.value })}
+                placeholder="e.g. Marina Tower Pump Room"
                 className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
             />
+            {editingId && (
+                <p className="text-xs text-mist-400 mt-1">Leave blank to keep the current site unchanged.</p>
+            )}
             </label>
 
             <label className="block">
@@ -337,15 +384,10 @@ return (
                 </option>
                 ))}
             </select>
-            {editingId && (
-                <p className="text-xs text-mist-400 mt-1">
-                Leave both Site and this unselected to keep the current assignment.
-                </p>
-            )}
             </label>
 
             <label className="block">
-            <span className="block text-xs font-mono text-mist-400 mb-1.5">LATITUDE (optional — updates the selected site)</span>
+            <span className="block text-xs font-mono text-mist-400 mb-1.5">LATITUDE (optional — updates the site)</span>
             <input
                 type="number" step="any"
                 value={newDevice.lat}
@@ -354,7 +396,7 @@ return (
             />
             </label>
             <label className="block">
-            <span className="block text-xs font-mono text-mist-400 mb-1.5">LONGITUDE (optional — updates the selected site)</span>
+            <span className="block text-xs font-mono text-mist-400 mb-1.5">LONGITUDE (optional — updates the site)</span>
             <input
                 type="number" step="any"
                 value={newDevice.lng}
@@ -364,7 +406,7 @@ return (
             </label>
 
             <label className="block sm:col-span-2">
-            <span className="block text-xs font-mono text-mist-400 mb-1.5">GOOGLE MAPS LINK (optional — updates the selected site)</span>
+            <span className="block text-xs font-mono text-mist-400 mb-1.5">GOOGLE MAPS LINK (optional — updates the site)</span>
             <input
                 type="url"
                 value={newDevice.maps_url}
@@ -445,7 +487,7 @@ return (
                 <p className="text-xs text-mist-400 mt-1">Leave empty to keep existing photos.</p>
             )}
             </label>
-            
+
             <div className="sm:col-span-2">
             <button type="submit" disabled={adding} className="bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-ink-950 font-semibold px-5 py-2 rounded-md transition-colors">
                 {adding ? 'Saving…' : editingId ? 'Save changes' : 'Add device'}
@@ -473,6 +515,8 @@ return (
             {filteredDevices.length} of {devices.length} · refreshes every 30s
         </p>
         </div>
+
+        <DeviceFilters devices={devices} filters={filters} setFilters={setFilters} showCompany />
 
         {loading && <p className="px-6 py-10 text-center text-mist-400">Loading fleet…</p>}
         {!loading && error && <p className="px-6 py-10 text-center text-alert-500">{error}</p>}
@@ -524,11 +568,11 @@ return (
                         )}
                     </td>
                     <td className="px-4 py-3">
-                    {photoUrls[d.id]?.length > 0 ? (
+                        {photoUrls[d.id]?.length > 0 ? (
                         <img src={photoUrls[d.id][0]} alt={d.name} className="w-10 h-10 rounded object-cover" />
-                    ) : (
+                        ) : (
                         <div className="w-10 h-10 rounded bg-ink-700 flex items-center justify-center text-mist-400 text-xs">—</div>
-                    )}
+                        )}
                     </td>
                     <td className="px-4 py-3 text-mist-400 font-mono text-xs">{d.id}</td>
                     <td className="px-4 py-3">
@@ -537,8 +581,8 @@ return (
                     </td>
                     <td className="px-4 py-3 text-mist-200">{d.site_name ?? '—'}</td>
                     <td className="px-4 py-3">
-                    <p className="text-mist-200">{d.company_name || d.owner_full_name || '—'}</p>
-                    <p className="text-xs font-mono text-mist-400">{d.owner_portal === 'company' ? 'COMPANY' : 'CUSTOMER'}</p>
+                        <p className="text-mist-200">{d.company_name || d.owner_full_name || '—'}</p>
+                        <p className="text-xs font-mono text-mist-400">{d.owner_portal === 'company' ? 'COMPANY' : 'CUSTOMER'}</p>
                     </td>
                     <td className="px-4 py-3">
                         {d.maps_url ? (

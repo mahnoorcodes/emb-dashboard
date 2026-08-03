@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import Navbar from '../components/Navbar'
 import DeviceDetailPanel from '../components/DeviceDetailPanel'
 import DeviceMap from '../components/DeviceMap'
+import DeviceFilters, { defaultFilters, applyFilters } from '../components/DeviceFilters'
 
 const STALE_MINUTES = 30
 const REFRESH_MS = 30000
@@ -41,6 +42,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState('')
   const [selectedDevice, setSelectedDevice] = useState(null)
   const [view, setView] = useState('table')
+  const [filters, setFilters] = useState(defaultFilters)
 
   useEffect(() => {
     let active = true
@@ -79,13 +81,14 @@ export default function Dashboard() {
   // query (device_status view), so this can never surface another
   // company's devices no matter what's typed here.
   const q = search.trim().toLowerCase()
-  const filteredDevices = q
+  const searched = q
     ? devices.filter((d) =>
-          [d.name, d.device_type, d.site_name, d.model, d.company_name, d.owner_full_name]
+        [d.name, d.device_type, d.site_name, d.model, d.company_name, d.owner_full_name]
           .filter(Boolean)
           .some((field) => field.toLowerCase().includes(q))
       )
     : devices
+  const filteredDevices = applyFilters(searched, filters, statusFor)
 
   return (
     <div className="min-h-screen bg-ink-950">
@@ -141,6 +144,8 @@ export default function Dashboard() {
               {filteredDevices.length} of {devices.length} · refreshes every 30s
             </p>
           </div>
+          
+          <DeviceFilters devices={devices} filters={filters} setFilters={setFilters} />
 
           {view === 'table' && loading && <p className="px-6 py-10 text-center text-mist-400">Loading devices…</p>}
 
