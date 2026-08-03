@@ -53,7 +53,7 @@ const [selectedDevice, setSelectedDevice] = useState(null)
 // customer's fleet, since RLS grants full read/write when this is true.
 const [showAddForm, setShowAddForm] = useState(false)
 const [newDevice, setNewDevice] = useState({
-id: '', name: '', device_type: DEVICE_TYPES[0], model: '', assigned_user_id: '',
+id: '', name: '', device_type: DEVICE_TYPES[0], model: '', site_id: '', assigned_user_id: '',
 lat: '', lng: '', maps_url: '', water_volume: '', temperature: '', battery: '', signal_rsrp: '', input_state: '',
 })
 const [addError, setAddError] = useState(null)
@@ -202,7 +202,7 @@ setDevices(data ?? [])
 function resetForm() {
 setEditingId(null)
 setNewDevice({
-    id: '', name: '', device_type: DEVICE_TYPES[0], model: '', assigned_user_id: '',
+    id: '', name: '', device_type: DEVICE_TYPES[0], model: '', site_id: '', assigned_user_id: '',
     lat: '', lng: '', maps_url: '', water_volume: '', temperature: '', battery: '', signal_rsrp: '', input_state: '',
 })
 setPhotoFiles([])
@@ -212,7 +212,7 @@ setShowAddForm(false)
 function handleEditClick(d) {
 setEditingId(d.id)
 setNewDevice({
-    id: d.id, name: d.name, device_type: d.device_type, model: d.model ?? '',
+    id: d.id, name: d.name, device_type: d.device_type, model: d.model ?? '', site_id: d.site_id ?? '',
     assigned_user_id: '', // can't reverse-lookup which user without another query — re-pick if reassigning
     lat: d.lat ?? '', lng: d.lng ?? '', maps_url: d.maps_url ?? '',
     water_volume: d.water_volume ?? '', temperature: d.temperature ?? '',
@@ -242,7 +242,7 @@ return <Navigate to="/dashboard" replace />
 const q = search.trim().toLowerCase()
 const filteredDevices = q
 ? devices.filter((d) =>
-    [d.name, d.device_type, d.site_name, d.model, d.id]
+        [d.name, d.device_type, d.site_name, d.model, d.company_name, d.owner_full_name]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(q))
     )
@@ -313,35 +313,33 @@ return (
             </label>
 
             <label className="block">
-            <span className="block text-xs font-mono text-mist-400 mb-1.5">DEVICE PHOTOS (up to 3)</span>
+            <span className="block text-xs font-mono text-mist-400 mb-1.5">SITE</span>
             <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => {
-                const files = Array.from(e.target.files).slice(0, 3)
-                if (e.target.files.length > 3) setAddError('Only the first 3 photos were kept — max 3 allowed.')
-                setPhotoFiles(files)
-                }}
-                className="w-full text-sm text-mist-400"
+                value={newDevice.site}
+                onChange={(e) => setNewDevice({ ...newDevice, site: e.target.value })}
+                className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
             />
-            {photoFiles.length > 0 && (
-                <p className="text-xs text-mist-400 mt-1">{photoFiles.length} photo{photoFiles.length > 1 ? 's' : ''} selected</p>
-            )}
-            {editingId && photoFiles.length === 0 && (
-                <p className="text-xs text-mist-400 mt-1">Leave empty to keep existing photos.</p>
-            )}
             </label>
 
             <label className="block">
-            <span className="block text-xs font-mono text-mist-400 mb-1.5">GOOGLE MAPS LINK (optional — updates the selected site)</span>
-            <input
-                type="url"
-                value={newDevice.maps_url}
-                onChange={(e) => setNewDevice({ ...newDevice, maps_url: e.target.value })}
-                placeholder="https://maps.app.goo.gl/..."
+            <span className="block text-xs font-mono text-mist-400 mb-1.5">ASSIGN TO CUSTOMER</span>
+            <select
+                value={newDevice.assigned_user_id ?? ''}
+                onChange={(e) => setNewDevice({ ...newDevice, assigned_user_id: e.target.value })}
                 className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
-            />
+            >
+                <option value="">— Not assigned to a specific user —</option>
+                {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                    {u.full_name ?? 'Unnamed'} ({u.email})
+                </option>
+                ))}
+            </select>
+            {editingId && (
+                <p className="text-xs text-mist-400 mt-1">
+                Leave both Site and this unselected to keep the current assignment.
+                </p>
+            )}
             </label>
 
             <label className="block">
@@ -362,6 +360,18 @@ return (
                 className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
             />
             </label>
+
+            <label className="block sm:col-span-2">
+            <span className="block text-xs font-mono text-mist-400 mb-1.5">GOOGLE MAPS LINK (optional — updates the selected site)</span>
+            <input
+                type="url"
+                value={newDevice.maps_url}
+                onChange={(e) => setNewDevice({ ...newDevice, maps_url: e.target.value })}
+                placeholder="https://maps.app.goo.gl/..."
+                className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
+            />
+            </label>
+
             <label className="block">
             <span className="block text-xs font-mono text-mist-400 mb-1.5">WATER VOLUME (L, optional initial reading)</span>
             <input
@@ -380,6 +390,7 @@ return (
                 className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
             />
             </label>
+
             <label className="block">
             <span className="block text-xs font-mono text-mist-400 mb-1.5">BATTERY (%, optional initial reading)</span>
             <input
@@ -398,7 +409,8 @@ return (
                 className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
             />
             </label>
-            <label className="block">
+
+            <label className="block sm:col-span-2">
             <span className="block text-xs font-mono text-mist-400 mb-1.5">INPUT STATE (optional initial reading)</span>
             <select
                 value={newDevice.input_state}
@@ -412,26 +424,26 @@ return (
             </label>
 
             <label className="block sm:col-span-2">
-            <span className="block text-xs font-mono text-mist-400 mb-1.5">ASSIGN TO CUSTOMER</span>
-            <select
-                value={newDevice.assigned_user_id ?? ''}
-                onChange={(e) => setNewDevice({ ...newDevice, assigned_user_id: e.target.value })}
-                className="w-full bg-ink-900 border border-ink-600 rounded-md px-3 py-2 text-mist-200 focus:outline-none focus:ring-2 focus:ring-live-600"
-            >
-                <option value="">— Not assigned to a specific user —</option>
-                {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                    {u.full_name ?? 'Unnamed'} ({u.email})
-                </option>
-                ))}
-            </select>
-            {editingId && (
-                <p className="text-xs text-mist-400 mt-1">
-                Leave unselected to keep this device's current site assignment.
-                </p>
+            <span className="block text-xs font-mono text-mist-400 mb-1.5">DEVICE PHOTOS (up to 3)</span>
+            <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => {
+                const files = Array.from(e.target.files).slice(0, 3)
+                if (e.target.files.length > 3) setAddError('Only the first 3 photos were kept — max 3 allowed.')
+                setPhotoFiles(files)
+                }}
+                className="w-full text-sm text-mist-400"
+            />
+            {photoFiles.length > 0 && (
+                <p className="text-xs text-mist-400 mt-1">{photoFiles.length} photo{photoFiles.length > 1 ? 's' : ''} selected</p>
+            )}
+            {editingId && photoFiles.length === 0 && (
+                <p className="text-xs text-mist-400 mt-1">Leave empty to keep existing photos.</p>
             )}
             </label>
-
+            
             <div className="sm:col-span-2">
             <button type="submit" disabled={adding} className="bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-ink-950 font-semibold px-5 py-2 rounded-md transition-colors">
                 {adding ? 'Saving…' : editingId ? 'Save changes' : 'Add device'}

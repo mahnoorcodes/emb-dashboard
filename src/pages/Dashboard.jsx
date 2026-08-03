@@ -79,7 +79,7 @@ export default function Dashboard() {
   const q = search.trim().toLowerCase()
   const filteredDevices = q
     ? devices.filter((d) =>
-        [d.name, d.device_type, d.site_name, d.model]
+          [d.name, d.device_type, d.site_name, d.model, d.company_name, d.owner_full_name]
           .filter(Boolean)
           .some((field) => field.toLowerCase().includes(q))
       )
