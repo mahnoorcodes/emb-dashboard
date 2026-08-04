@@ -1,13 +1,9 @@
-import { Link } from 'react-router-dom'
+import Navbar from './Navbar'
 
 export default function AuthShell({ eyebrow, title, subtitle, children, footer }) {
   return (
     <div className="min-h-screen bg-ink-950 flex flex-col">
-      <header className="px-8 py-6">
-        <Link to="/" className="font-mono text-sm tracking-widest text-mist-400 hover:text-live-500 transition-colors">
-          EMB · EMERGENCY MESSAGING BACKBONE
-        </Link>
-      </header>
+      <Navbar title="EMERGENCY MESSAGING BACKBONE" />
       <main className="flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-md">
           <div className="mb-8">

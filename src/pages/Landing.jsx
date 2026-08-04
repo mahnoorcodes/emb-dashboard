@@ -1,22 +1,14 @@
 import { Link } from 'react-router-dom'
+import Navbar from '../components/Navbar'
 
 export default function Landing() {
   return (
     <div className="min-h-screen bg-ink-950 flex flex-col">
-      <header className="px-8 py-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to="/dashboard" className="flex items-center gap-3 rounded-md transition-colors hover:text-brand-500">
-            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-ink-600 bg-ink-700/70 p-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-mist-400">
-              <img src="https://wlxxakyyguiddtfbwdou.supabase.co/storage/v1/object/public/website-images/one93nine-logo.webp" alt="One93Nine" className="h-full w-full object-contain" />
-            </div>
-            <span className="font-mono text-sm tracking-widest text-mist-400">EMB · EMERGENCY MESSAGING BACKBONE</span>
-          </Link>
-        </div>
-      </header>
+      <Navbar title="EMERGENCY MESSAGING BACKBONE" />
 
       <main className="flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-3xl text-center">
-          <p className="font-mono text-xs tracking-[0.2em] text-brand-500 mb-3">LIVE WATER DEVICE MONITORING</p>
+          <p className="font-mono text-xs tracking-[0.2em] text-brand-500 mb-3">LIVE DEVICE MONITORING</p>
           <h1 className="text-3xl sm:text-4xl font-semibold text-mist-200 mb-3">
             One signal. Three channels. Zero silence.
           </h1>
