@@ -4,7 +4,14 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-ink-950 flex flex-col">
       <header className="px-8 py-6 flex items-center justify-between">
-        <span className="font-mono text-sm tracking-widest text-mist-400">EMB · EMERGENCY MESSAGING BACKBONE</span>
+        <div className="flex items-center gap-3">
+          <Link to="/dashboard" className="flex items-center gap-3 rounded-md transition-colors hover:text-brand-500">
+            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-ink-600 bg-ink-700/70 p-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-mist-400">
+              <img src="https://wlxxakyyguiddtfbwdou.supabase.co/storage/v1/object/public/website-images/one93nine-logo.webp" alt="One93Nine" className="h-full w-full object-contain" />
+            </div>
+            <span className="font-mono text-sm tracking-widest text-mist-400">EMB · EMERGENCY MESSAGING BACKBONE</span>
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-6">

@@ -19,7 +19,12 @@ return (
 <header className="relative border-b border-ink-700">
     <div className="px-4 sm:px-8 py-5 flex items-center justify-between">
     <div className="flex items-center gap-3">
+        <Link to="/dashboard" className="flex items-center gap-3 rounded-md transition-colors hover:text-brand-500">
+            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-ink-600 bg-ink-700/70 p-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-mist-400">
+                <img src="https://wlxxakyyguiddtfbwdou.supabase.co/storage/v1/object/public/website-images/one93nine-logo.webp" alt="One93Nine" className="h-full w-full object-contain" />
+            </div>
         <span className="font-mono text-sm tracking-widest text-mist-400">EMB · {title}</span>
+        </Link>
         {badge && (
         <span className="text-xs font-mono bg-brand-500/10 text-brand-500 border border-brand-500 rounded px-2 py-0.5">
             {badge}
