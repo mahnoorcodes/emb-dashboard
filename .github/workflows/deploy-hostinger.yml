@@ -1,42 +1,42 @@
 name: Deploy to Hostinger
 
 on:
-push:
-branches: [main]
+  push:
+    branches: [main]
 
 permissions:
-contents: write
+  contents: write
 
 concurrency:
-group: hostinger
-cancel-in-progress: true
+  group: hostinger
+  cancel-in-progress: true
 
 jobs:
-build-and-publish:
-runs-on: ubuntu-latest
-steps:
-    - uses: actions/checkout@v4
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-    - uses: actions/setup-node@v4
-    with:
-        node-version: 22.22.2
-    - run: npm install -g npm@10.9.7
-    - run: npm ci
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.2
+      - run: npm install -g npm@10.9.7
+      - run: npm ci
 
-    # No --base override here — default '/' in vite.config.js is correct
-    # for Hostinger, which serves this at the domain root.
-    - run: npm run build
-    env:
-        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      # No --base override here — default '/' in vite.config.js is correct
+      # for Hostinger, which serves this at the domain root.
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
-    # Publish ONLY the built dist/ contents to a dedicated branch —
-    # this branch becomes exactly what Hostinger's Git deploy pulls,
-    # so it never needs to run a build step itself.
-    - name: Publish dist/ to hostinger-live branch
-    uses: peaceiris/actions-gh-pages@v4
-    with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./dist
-        publish_branch: hostinger-live
-        force_orphan: true
+      # Publish ONLY the built dist/ contents to a dedicated branch —
+      # this branch becomes exactly what Hostinger's Git deploy pulls,
+      # so it never needs to run a build step itself.
+      - name: Publish dist/ to hostinger-live branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: hostinger-live
+          force_orphan: true
