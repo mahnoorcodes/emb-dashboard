@@ -1,9 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// GitHub Pages serves the site from /<repo-name>/ — set base to match your repo name exactly.
-// e.g. if your repo is github.com/mahnoor/emb-dashboard, base should be '/emb-dashboard/'
+// Default base is root ('/') — correct for Hostinger, which serves this at
+// your domain root. GitHub Pages needs '/emb-dashboard/' instead, since it
+// serves from a subfolder — that override is passed via the --base flag in
+// .github/workflows/deploy.yml, not hardcoded here, so both hosts work from
+// the same source.
 export default defineConfig({
-  base: '/emb-dashboard/',
+  base: '/',
   plugins: [react()],
 })
