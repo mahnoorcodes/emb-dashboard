@@ -645,7 +645,15 @@ return (
             <tbody>
                 {tickets.map((t) => (
                 <tr key={t.id} className="border-b border-ink-700 last:border-0 hover:bg-ink-700/40 transition-colors">
-                    <td className="px-6 py-4 text-mist-400 font-mono text-xs">{t.zoho_ticket_id}</td>
+                    <td className="px-6 py-4 text-mist-400 font-mono text-xs">
+                        <a href={`https://desk.zoho.com/agent/one93nineconsultingfze/one9-3nine-consulting-fze/tickets/details/${t.zoho_ticket_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand-500 hover:underline"
+                    >
+                        {t.zoho_ticket_id}
+                    </a>
+                    </td>
                     <td className="px-6 py-4 text-mist-200 font-mono text-xs">{t.device_id ?? '—'}</td>
                     <td className="px-6 py-4 text-mist-200">{t.subject ?? '—'}</td>
                     <td className="px-6 py-4 text-mist-200 font-mono text-xs">{t.status ?? '—'}</td>
