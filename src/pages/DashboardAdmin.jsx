@@ -230,13 +230,6 @@ if (hasReading) {
         message: 'Leak/alarm relay closed',
     })
     if (alertError) console.error('Alert insert failed:', alertError.message)
-    } else if (newDevice.input_state === 'open') {
-    const { error: ackError } = await supabase
-        .from('alerts')
-        .update({ acknowledged_at: new Date().toISOString() })
-        .eq('device_id', targetId)
-        .is('acknowledged_at', null)
-    if (ackError) console.error('Alert acknowledge failed:', ackError.message)
     }
 }
 
