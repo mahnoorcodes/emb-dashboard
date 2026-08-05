@@ -43,14 +43,14 @@ return (
     {/* Backdrop */}
     <div
     onClick={onClose}
-    className={`fixed inset-0 bg-black/60 z-40 transition-opacity ${
+    className={`fixed inset-0 bg-black/60 z-[1100] transition-opacity ${
         isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
     }`}
     />
 
     {/* Panel */}
     <div
-    className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-ink-800 border-l border-ink-700 z-50
+    className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-ink-800 border-l border-ink-700 z-[1150]
                 overflow-y-auto transition-transform duration-300 ${
                     isOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}
@@ -187,7 +187,7 @@ return (
     {expandedPhoto && (
     <div
         onClick={() => setExpandedPhoto(null)}
-        className="fixed inset-0 bg-black/85 z-[60] flex items-center justify-center p-6 cursor-zoom-out"
+        className="fixed inset-0 bg-black/85 z-[1200] flex items-center justify-center p-6 cursor-zoom-out"
     >
         <img
         src={expandedPhoto}

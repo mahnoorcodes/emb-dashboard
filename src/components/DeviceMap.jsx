@@ -39,7 +39,7 @@ iconAnchor: [12, 12],
 })
 }
 
-export default function DeviceMap({ devices }) {
+export default function DeviceMap({ devices, onSelectDevice }) {
 const containerRef = useRef(null)
 const mapRef = useRef(null)
 
@@ -89,15 +89,27 @@ mappable.forEach((d) => {
     })
 const mapLink = d.maps_url || `https://www.google.com/maps?q=${d.lat},${d.lng}`
     marker.bindPopup(
-    `<div style="font-family: sans-serif; font-size: 13px;">
-        <strong>${d.name}</strong><br/>
-        ${d.site_name ? d.site_name + '<br/>' : ''}
-        Status: ${statusLabel(d)}<br/>
-        <a href="${mapLink}" target="_blank" rel="noopener noreferrer" style="color: #54b848;">Open in Google Maps ↗</a>
-    </div>`
-    )
-    clusterGroup.addLayer(marker)
-})
+            `<div style="font-family: sans-serif; font-size: 13px;">
+            <strong>${d.name}</strong><br/>
+            ${d.site_name ? d.site_name + '<br/>' : ''}
+            Status: ${statusLabel(d)}<br/>
+            <a href="${mapLink}" target="_blank" rel="noopener noreferrer" style="color: #54b848;">Open in Google Maps ↗</a><br/>
+            <a href="#" class="view-device-link" style="color: #99cc33; font-weight: 600;">View device details →</a>
+            </div>`
+        )
+
+        marker.on('popupopen', (e) => {
+            const link = e.popup.getElement()?.querySelector('.view-device-link')
+            if (link) {
+            link.addEventListener('click', (evt) => {
+                evt.preventDefault()
+                onSelectDevice?.(d)
+            })
+            }
+        })
+
+        clusterGroup.addLayer(marker)
+        })
 
 map.addLayer(clusterGroup)
 

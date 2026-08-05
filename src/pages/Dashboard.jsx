@@ -110,7 +110,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="bg-ink-800 border border-ink-700 rounded-lg overflow-hidden">
+        <div className={`bg-ink-800 border border-ink-700 rounded-lg ${view === 'map' ? 'overflow-visible' : 'overflow-hidden'}`}>
           <div className="px-6 py-4 border-b border-ink-700 flex items-center justify-between gap-4">
             <p className="font-mono text-xs tracking-widest text-brand-500 whitespace-nowrap">DEVICES</p>
             <div className="flex bg-ink-900 border border-ink-600 rounded-md p-0.5">
@@ -164,7 +164,9 @@ export default function Dashboard() {
             <p className="px-6 py-10 text-center text-mist-400">No devices match "{search}".</p>
           )}
 
-          {view === 'map' && !loading && !error && <DeviceMap devices={filteredDevices} />}
+          {view === 'map' && !loading && !error && (
+            <DeviceMap devices={filteredDevices} onSelectDevice={setSelectedDevice} />
+          )}
 
           {view === 'table' && !loading && !error && filteredDevices.length > 0 && (
             <div className="overflow-x-auto table-scroll">
