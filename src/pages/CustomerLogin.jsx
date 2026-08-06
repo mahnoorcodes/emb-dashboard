@@ -44,7 +44,7 @@ export default function CustomerLogin() {
         <>
           No account yet? <Link to="/customer/signup" className="text-live-500 hover:underline">Sign up</Link>
           <br />
-          Are you ONE93NINE/LeakDtech staff? <Link to="/company/login" className="text-live-500 hover:underline">Company login</Link>
+          Logging in on behalf of a company? <Link to="/company/login" className="text-live-500 hover:underline">Company login</Link>
         </>
       }
     >
