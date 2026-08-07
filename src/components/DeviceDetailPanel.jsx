@@ -33,7 +33,13 @@ const hrs = Math.round(mins / 60)
 if (hrs < 24) return `${hrs}h ago`
 return `${Math.round(hrs / 24)}d ago`
 }
-
+function formatDateTime(ts) {
+    if (!ts) return '—'
+    return new Date(ts).toLocaleString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+    })
+}
 export default function DeviceDetailPanel({ device, photos = [], showDeviceId = false, onClose, onEdit, onDelete }) {
 const isOpen = !!device
 const [expandedPhoto, setExpandedPhoto] = useState(null)
@@ -157,6 +163,7 @@ return (
             </Row>
 
             <Row label="LAST READING">{formatAgo(device.last_reading_at)}</Row>
+            <Row label="CREATED">{formatDateTime(device.installed_at)}</Row>
         </div>
 
         {(onEdit || onDelete) && (
