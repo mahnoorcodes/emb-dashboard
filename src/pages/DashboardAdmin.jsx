@@ -33,6 +33,13 @@ const hrs = Math.round(mins / 60)
 if (hrs < 24) return `${hrs}h ago`
 return `${Math.round(hrs / 24)}d ago`
 }
+function formatDateTime(ts) {
+    if (!ts) return '—'
+    return new Date(ts).toLocaleString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+    })
+}
 
 export default function DashboardAdmin() {
 const { user, isPlatformAdmin, loading: authLoading } = useAuth()
@@ -299,6 +306,17 @@ const searched = q
     )
 : devices
 const filteredDevices = applyFilters(searched, filters, statusFor)
+// Alerts always float to the top, regardless of age. Everything else is
+// newest-first — oldest devices end up at the very bottom.
+const sortedDevices = [...filteredDevices].sort((a, b) => {
+    const aAlert = a.latest_alert_severity ? 1 : 0
+    const bAlert = b.latest_alert_severity ? 1 : 0
+    if (aAlert !== bAlert) return bAlert - aAlert
+
+    const aTime = a.installed_at ? new Date(a.installed_at).getTime() : 0
+    const bTime = b.installed_at ? new Date(b.installed_at).getTime() : 0
+    return bTime - aTime
+})
 
 return (
 <div className="min-h-screen bg-ink-950">
@@ -536,7 +554,7 @@ return (
 
         {!loading && !error && filteredDevices.length > 0 && (
         <div className="overflow-x-auto table-scroll">
-            <table className="table-fixed min-w-[1850px] text-sm">
+            <table className="table-fixed min-w-[2000px] text-sm">
             <thead>
                 <tr className="text-left text-mist-400 font-mono text-xs border-b border-ink-700">
                 <th className="px-4 py-3 w-32">Status</th>
@@ -554,10 +572,11 @@ return (
                 <th className="px-4 py-3 w-28">Input State</th>
                 <th className="px-4 py-3 w-28">Last Reading</th>
                 <th className="px-4 py-3 w-28">Actions</th>
+                <th className="px-4 py-3 w-36">Created</th>
                 </tr>
             </thead>
             <tbody>
-                {filteredDevices.map((d) => {
+                {sortedDevices.map((d) => {
                 const status = statusFor(d)
                 return (
                     <tr
@@ -615,6 +634,7 @@ return (
                         <button onClick={(e) => { e.stopPropagation(); handleDeleteDevice(d) }} className="text-alert-500 hover:underline text-xs">Delete</button>
                         </div>
                     </td>
+                    <td className="px-4 py-3 text-mist-400 font-mono text-xs">{formatDateTime(d.installed_at)}</td>
                     </tr>
                 )
                 })}
@@ -636,7 +656,7 @@ return (
             <thead>
                 <tr className="text-left text-mist-400 font-mono text-xs border-b border-ink-700">
                 <th className="px-6 py-3">Zoho Ticket ID</th>
-                <th className="px-6 py-3">Device</th>
+                <th className="px-6 py-3">Device ID</th>
                 <th className="px-6 py-3">Subject</th>
                 <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3">Updated</th>
